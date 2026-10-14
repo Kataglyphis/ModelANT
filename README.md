@@ -34,6 +34,31 @@ The release carries `<name>.onnx`, `<name>.LICENSE` and `<name>.NOTICE` (ship bo
 `<name>.model.json`, the upstream checkpoint it came from (a mirror, so a rebuild does not depend
 on Google Drive) and `SHA256SUMS`.
 
+## Comparing a candidate
+
+Before a model replaces another, run both on real pictures from the cameras that will use it
+(they stay local; never commit them):
+
+```bash
+python scripts/compare.py --model old.onnx --model new.onnx --class 15 pictures/*.jpg
+```
+
+It prints each model's time per run (2 threads, like the cameras) and what it finds, after each
+model's own preprocessing (`kataglyphis.preprocess`; a model without it is letterboxed).
+
+## Adding a model
+
+A model belongs here when its code **and** its weights are under a permissive license (Apache-2.0,
+MIT, BSD) and its training data allows it. Ultralytics' YOLO models (AGPL-3.0) do not qualify.
+
+1. `models/<name>/model.json` pins the upstream repository, commit, config and checkpoint
+   (SHA-256); `models/<name>/LICENSE` is the upstream license and `models/<name>/NOTICE` names
+   its authors and what the export changed.
+2. An export script that writes the `[1, 300, 6]` layout and names the preprocessing in the
+   metadata (`scripts/export_deim.py` is the DEIM one).
+3. Compare it (above), then tag `<name>-v1`; the consumers move their lock files to the
+   release's SHA-256.
+
 ## Using one
 
 Pin the release asset's URL and SHA-256 in the consumer and verify it after the download, as the

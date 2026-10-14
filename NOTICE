@@ -1,0 +1,8 @@
+ModelANT
+Copyright 2026 Jonas Heinle (Kataglyphis)
+
+The scripts in this repository are licensed under the Apache License 2.0 (LICENSE).
+
+Each released model is a derived work of an upstream project under its own permissive license;
+models/<name>/LICENSE and models/<name>/NOTICE name it, its authors and what was changed, and
+both travel with the model in its release as <name>.LICENSE and <name>.NOTICE.

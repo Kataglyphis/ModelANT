@@ -1,0 +1,12 @@
+# What the export ran with (2026-10-14); build.sh installs torch 2.14.1 and torchvision 0.29.1 from the CPU index first.
+onnx==1.23.2
+onnxruntime==1.31.0
+numpy==2.5.2
+pillow==12.3.0
+PyYAML==6.0.3
+scipy==1.18.1
+faster-coco-eval==1.8.0
+tensorboard==2.21.0
+calflops==0.3.2
+transformers==5.19.0
+gdown==6.4.2

@@ -1,0 +1,33 @@
+# A tag <name>-v<N> builds models/<name> from its pinned upstream and publishes it as that release.
+name: Release a model
+
+on:
+  push:
+    tags: ["*-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Build the ONNX from the pinned upstream
+        run: |
+          name="${GITHUB_REF_NAME%-v*}"
+          bash scripts/build.sh "${name}" dist
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name="${GITHUB_REF_NAME%-v*}"
+          summary="$(python3 -c "import json; print(json.load(open('models/${name}/model.json'))['summary'])")"
+          {
+            printf '%s\n\nLicense: Apache-2.0 (see %s.LICENSE and %s.NOTICE).\n\n' "${summary}" "${name}" "${name}"
+            printf 'SHA-256:\n```\n'; cat dist/SHA256SUMS; printf '```\n'
+          } > notes.md
+          gh release create "${GITHUB_REF_NAME}" dist/* --title "${GITHUB_REF_NAME}" --notes-file notes.md

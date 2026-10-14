@@ -10,6 +10,8 @@ spec="${root}/models/${name}/model.json"
 [ -f "${spec}" ] || { printf 'no %s\n' "${spec}" >&2; exit 2; }
 work="${MODELANT_WORK:-${root}/.work}"
 mkdir -p "${work}" "${out}"
+# The export runs inside the upstream checkout, so a relative <out-dir> would land there.
+out="$(cd "${out}" && pwd)"
 
 field() { python3 -c "import json,sys; d=json.load(open('${spec}')); print(eval('d' + sys.argv[1]))" "$1"; }
 repo="$(field "['upstream']['repository']")"

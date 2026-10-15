@@ -25,12 +25,18 @@ def main():
     sys.path.insert(0, a.deim)
     from engine.core import YAMLConfig
 
-    cfg = YAMLConfig(a.config, resume=a.checkpoint)
+    # The decoder's anchors and the encoder's position embeddings are built for this size.
+    cfg = YAMLConfig(a.config, resume=a.checkpoint, eval_spatial_size=[a.size, a.size])
     if "HGNetv2" in cfg.yaml_cfg:
         cfg.yaml_cfg["HGNetv2"]["pretrained"] = False
     state = torch.load(a.checkpoint, map_location="cpu")
     state = state["ema"]["module"] if "ema" in state else state["model"]
-    cfg.model.load_state_dict(state)
+    # At another size the anchors and masks the checkpoint saved for 640 are rebuilt by the model.
+    own = cfg.model.state_dict()
+    resized = sorted(k for k, v in state.items() if k in own and own[k].shape != v.shape)
+    if any(not k.endswith(("anchors", "valid_mask", "pos_embed")) for k in resized):
+        sys.exit(f"checkpoint tensors that do not fit size {a.size}: {resized}")
+    cfg.model.load_state_dict({k: v for k, v in state.items() if k not in resized}, strict=not resized)
 
     class Wrapped(nn.Module):
         def __init__(self):

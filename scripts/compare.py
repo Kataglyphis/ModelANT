@@ -41,14 +41,16 @@ def main():
     for path in a.model:
         s = ort.InferenceSession(path, opts, providers=["CPUExecutionProvider"])
         mode = s.get_modelmeta().custom_metadata_map.get("kataglyphis.preprocess", "letterbox")
-        models.append((path.rsplit("/", 1)[-1], s, mode))
+        # The square input the model was exported for, so 640, 480 and 320 exports compare side by side.
+        size = s.get_inputs()[0].shape[2]
+        models.append((path.rsplit("/", 1)[-1], s, mode, size))
 
-    total = {name: 0.0 for name, _, _ in models}
+    total = {name: 0.0 for name, _, _, _ in models}
     for picture in a.pictures:
         img = Image.open(picture).convert("RGB")
         print(f"== {picture.rsplit('/', 1)[-1]} ({img.size[0]}x{img.size[1]})")
-        for name, s, mode in models:
-            x, back = prepare(img, mode)
+        for name, s, mode, size in models:
+            x, back = prepare(img, mode, size)
             t = (np.asarray(x, dtype=np.float32) / 255.0).transpose(2, 0, 1)[None]
             s.run(None, {"images": t})
             start = time.perf_counter()

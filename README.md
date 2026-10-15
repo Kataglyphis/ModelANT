@@ -44,7 +44,15 @@ python scripts/compare.py --model old.onnx --model new.onnx --class 15 pictures/
 ```
 
 It prints each model's time per run (2 threads, like the cameras) and what it finds, after each
-model's own preprocessing (`kataglyphis.preprocess`; a model without it is letterboxed).
+model's own preprocessing (`kataglyphis.preprocess`; a model without it is letterboxed) at the
+input size it was exported for.
+
+`export_deim.py --size 480` (or 320) exports the same checkpoint at a smaller input; the
+anchors and position embeddings the checkpoint saved for 640 are rebuilt for it. Measured
+2026-10-15 on 11 real arrival pictures of three cameras, on a Pi 5 at the cameras' 0.25
+threshold: 640 found the cat in 6 at 273 ms a run, 480 in 4 at 171 ms (it lost both small cats
+at a picture's edge, and two others fell from 0.86 and 0.63 to 0.40 and 0.35), 320 in 1 at
+97 ms. The release stays at 640.
 
 ## Adding a model
 

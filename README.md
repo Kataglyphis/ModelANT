@@ -1,73 +1,62 @@
-# ModelANT
+<div align="center">
+  <a href="https://jonasheinle.de">
+    <img src="https://raw.githubusercontent.com/Kataglyphis/ANTfrastructure/develop/images/logo.png" alt="logo" width="200" />
+  </a>
+
+  <h1>ModelANT</h1>
+
+  <h4>Permissively licensed ML models for the Kataglyphis projects, built from pinned upstream sources and published as releases.</h4>
+</div>
+
+[![Check](https://github.com/Kataglyphis/ModelANT/actions/workflows/check.yml/badge.svg)](https://github.com/Kataglyphis/ModelANT/actions/workflows/check.yml)
+
+[**Releases**](https://github.com/Kataglyphis/ModelANT/releases)
 
 The Kataglyphis family's machine-learning models, kept apart from the code that runs them. Each
 model is built here from its pinned upstream source and published as a GitHub release; the code
-repositories (OmniAccelerANT, OxidANT, AccelerANTgine) fetch it by URL and check its SHA-256, so no
-model file sits in their git history.
+repositories (OmniAccelerANT, OxidANT, AccelerANTgine, OrchestrANT) fetch it by URL and check its
+SHA-256, so no model file sits in their git history. Only permissively licensed models live here.
 
-Only permissively licensed models live here.
+## Highlights
+
+- **Permissive only**: code and weights under Apache-2.0, MIT or BSD, and training data that allows it.
+- **Built from a pinned upstream**: `model.json` pins the repository, commit, config and checkpoint SHA-256.
+- **One release per model version**, tag `<name>-v<N>`, with the ONNX, its `LICENSE` and `NOTICE`, and `SHA256SUMS`.
+- **One output layout**: `[1, 300, 6]` boxes, score and COCO class; the ONNX metadata names the preprocessing.
+- **Compared on real camera pictures** before a model replaces another (`scripts/compare.py`).
+
+## The models
 
 | Model | License | Classes | Params | GFLOPs | COCO AP | Input | Release |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `deim_dfine_n_coco` | Apache-2.0 | COCO 80 | 4 M | 7 | 43.0 | 640x640, plain resize | `deim_dfine_n_coco-v1` |
 
-## What a model looks like
-
-`models/<name>/model.json` pins the upstream repository and commit, its config, and the checkpoint
-with its SHA-256; `models/<name>/LICENSE` is the upstream license. The ONNX has one input `images`
-`[1, 3, 640, 640]` (RGB, 0..1) and one output `output0` `[1, 300, 6]`: x1, y1, x2, y2 in the
-input's pixels, the score, and the class as a 0..79 COCO index. Its metadata names the
-preprocessing (`kataglyphis.preprocess`: `stretch` or `letterbox`), so a consumer needs no setting.
-
-On the Raspberry Pi 5 (2 threads, ONNX Runtime CPU), measured 2026-10-14 against YOLO26n on 12
-arrival pictures of three real cat cameras: about 260 ms a run against 190 ms, and a cat found more
-often and more surely (0.42 -> 0.63, a lying cat missed by YOLO26n found at 0.64).
-
-## Releasing
+## Quick start
 
 ```bash
-bash scripts/build.sh deim_dfine_n_coco dist   # locally: venv, pinned checkout, checkpoint, export, check
-git tag deim_dfine_n_coco-v1 && git push origin deim_dfine_n_coco-v1   # CI builds and publishes it
+git clone --branch develop https://github.com/Kataglyphis/ModelANT.git
+cd ModelANT
+bash scripts/build.sh deim_dfine_n_coco dist   # venv, pinned checkout, checkpoint, export, check
 ```
 
-The release carries `<name>.onnx`, `<name>.LICENSE` and `<name>.NOTICE` (ship both with the model),
-`<name>.model.json`, the upstream checkpoint it came from (a mirror, so a rebuild does not depend
-on Google Drive) and `SHA256SUMS`.
+It needs python3, git and network. A consumer does not build: it pins the release asset's URL
+and SHA-256 in a lock, as
+[`data-repositories.md` § The lock](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md#the-lock)
+describes.
 
-## Comparing a candidate
+## Documentation
 
-Before a model replaces another, run both on real pictures from the cameras that will use it
-(they stay local; never commit them):
+| Topic | Read |
+| --- | --- |
+| What a model looks like, and how it ran on the cameras | [docs/models.md](docs/models.md#what-a-model-looks-like) |
+| Releasing a model | [docs/models.md](docs/models.md#releasing) |
+| Comparing a candidate, and smaller input sizes | [docs/models.md](docs/models.md#comparing-a-candidate) |
+| Adding a model | [docs/models.md](docs/models.md#adding-a-model) |
+| Why models live outside the code, and how consumers fetch them | [ANTfrastructure: `data-repositories.md`](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md) |
 
-```bash
-python scripts/compare.py --model old.onnx --model new.onnx --class 15 pictures/*.jpg
-```
+## Contributing and contact
 
-It prints each model's time per run (2 threads, like the cameras) and what it finds, after each
-model's own preprocessing (`kataglyphis.preprocess`; a model without it is letterboxed) at the
-input size it was exported for.
-
-`export_deim.py --size 480` (or 320) exports the same checkpoint at a smaller input; the
-anchors and position embeddings the checkpoint saved for 640 are rebuilt for it. Measured
-2026-10-15 on 11 real arrival pictures of three cameras, on a Pi 5 at the cameras' 0.25
-threshold: 640 found the cat in 6 at 273 ms a run, 480 in 4 at 171 ms (it lost both small cats
-at a picture's edge, and two others fell from 0.86 and 0.63 to 0.40 and 0.35), 320 in 1 at
-97 ms. The release stays at 640.
-
-## Adding a model
-
-A model belongs here when its code **and** its weights are under a permissive license (Apache-2.0,
-MIT, BSD) and its training data allows it. Ultralytics' YOLO models (AGPL-3.0) do not qualify.
-
-1. `models/<name>/model.json` pins the upstream repository, commit, config and checkpoint
-   (SHA-256); `models/<name>/LICENSE` is the upstream license and `models/<name>/NOTICE` names
-   its authors and what the export changed.
-2. An export script that writes the `[1, 300, 6]` layout and names the preprocessing in the
-   metadata (`scripts/export_deim.py` is the DEIM one).
-3. Compare it (above), then tag `<name>-v1`; the consumers move their lock files to the
-   release's SHA-256.
-
-## Using one
-
-Pin the release asset's URL and SHA-256 in the consumer and verify it after the download, as the
-family's scripts do for every other binary they fetch.
+ModelANT is one of the [Kataglyphis repositories](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/repository-family.md),
+which share one way to contribute and one contact. Licence: the scripts are Apache-2.0, see
+[LICENSE](LICENSE) and [NOTICE](NOTICE); each model keeps its upstream licence, shipped in its
+release as `<name>.LICENSE` and `<name>.NOTICE`.

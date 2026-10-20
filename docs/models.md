@@ -22,11 +22,29 @@ On the Raspberry Pi 5 (2 threads, ONNX Runtime CPU), measured 2026-10-14 against
 arrival pictures of three real cat cameras: about 260 ms a run against 190 ms, and a cat found
 more often and more surely (0.42 -> 0.63; a lying cat YOLO26n missed was found at 0.64).
 
+## Building
+
+`scripts/build.sh` runs in the family's Linux image, on its pinned CPython and the torch,
+torchvision and chain-built ONNX Runtime of its `/opt/venv`; anywhere else it stops, since ONNX
+Runtime would then come from PyPI. It adds only `scripts/requirements.txt`, in a venv that sees
+`/opt/venv` behind its own packages, held at the image's versions, and fails unless the hub's ORT
+census finds every ONNX Runtime the export can import to be a chain wheel. The export check
+prints the ONNX Runtime it ran on.
+
+```bash
+docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
+  ghcr.io/kataglyphis/kataglyphis_beschleuniger:latest bash scripts/build.sh deim_dfine_n_coco dist
+```
+
+The image runs as uid 1001, which must be able to write `dist/`. Measured 2026-10-20 in `:latest`
+(Python 3.14.4, torch 2.14.1+cpu, ONNX Runtime 1.30.0): 58 s, and all five files match
+`deim_dfine_n_coco-v1`'s `SHA256SUMS` byte for byte.
+
 ## Releasing
 
 ```bash
-bash scripts/build.sh deim_dfine_n_coco dist   # locally: venv, pinned checkout, checkpoint, export, check
-git tag deim_dfine_n_coco-v1 && git push origin deim_dfine_n_coco-v1   # CI builds and publishes it
+git tag deim_dfine_n_coco-v1 && git push origin deim_dfine_n_coco-v1   # CI builds it in the image and publishes it
+gh workflow run release.yml --ref develop -f model=deim_dfine_n_coco   # the same build as an artifact, no release
 ```
 
 The release carries `<name>.onnx`, `<name>.LICENSE` and `<name>.NOTICE` (ship both with the
@@ -39,7 +57,8 @@ Before a model replaces another, run both on real pictures from the cameras that
 stay local; never commit them):
 
 ```bash
-python scripts/compare.py --model old.onnx --model new.onnx --class 15 pictures/*.jpg
+docker run --rm -v "$PWD:/workspace" -w /workspace ghcr.io/kataglyphis/kataglyphis_beschleuniger:latest \
+  python3 scripts/compare.py --model old.onnx --model new.onnx --class 15 pictures/*.jpg
 ```
 
 It prints each model's time per run (2 threads, like the cameras) and what it finds, after each

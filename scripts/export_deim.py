@@ -73,6 +73,7 @@ def main():
     onnx.checker.check_model(proto)
     onnx.save(proto, a.out)
 
+    print(f"checking with onnxruntime {ort.__version__} ({ort.__file__}) against torch {torch.__version__}")
     got = ort.InferenceSession(a.out, providers=["CPUExecutionProvider"]).run(None, {"images": probe.numpy()})[0]
     if got.shape != (1, 300, 6):
         sys.exit(f"output shape {got.shape}, want (1, 300, 6)")

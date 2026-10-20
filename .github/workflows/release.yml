@@ -1,33 +1,63 @@
-# A tag <name>-v<N> builds models/<name> from its pinned upstream and publishes it as that release.
+# A tag <name>-v<N> builds models/<name> from its pinned upstream in the family's Linux image and publishes it as that release.
 name: Release a model
 
 on:
   push:
     tags: ["*-v*"]
+  # By hand: the same build, uploaded as an artifact instead of released.
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "models/<name> to build without publishing"
+        required: true
 
 permissions:
   contents: write
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    # About 10 min for the image pull, 5 for the build.
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # No `image:` here or below: the actions default it from the hub's versions.env, its one owner.
+      - name: Prepare CI host
+        uses: Kataglyphis/ANTfrastructure/.github/actions/prepare-linux-ci-host@develop
         with:
-          python-version: "3.14"
+          fetch-depth: '1'
+          submodules: 'false'
+
+      - name: Model name
+        id: model
+        env:
+          MODEL: ${{ inputs.model }}
+        run: echo "name=${MODEL:-${GITHUB_REF_NAME%-v*}}" >> "$GITHUB_OUTPUT"
+
+      # The image's pinned CPython, torch and chain ONNX Runtime; build.sh refuses to run anywhere else.
       - name: Build the ONNX from the pinned upstream
-        run: |
-          name="${GITHUB_REF_NAME%-v*}"
-          bash scripts/build.sh "${name}" dist
+        uses: Kataglyphis/ANTfrastructure/.github/actions/run-in-linux-container@develop
+        env:
+          MODEL_NAME: ${{ steps.model.outputs.name }}
+        with:
+          extra-args: -e MODEL_NAME
+          script: bash -c 'bash scripts/build.sh "${MODEL_NAME}" dist'
+
+      - name: Upload the build
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.model.outputs.name }}
+          path: dist/
+
       - name: Publish the release
+        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
+          MODEL_NAME: ${{ steps.model.outputs.name }}
         run: |
-          name="${GITHUB_REF_NAME%-v*}"
-          summary="$(python3 -c "import json; print(json.load(open('models/${name}/model.json'))['summary'])")"
+          summary="$(jq -r .summary "models/${MODEL_NAME}/model.json")"
           {
-            printf '%s\n\nLicense: Apache-2.0 (see %s.LICENSE and %s.NOTICE).\n\n' "${summary}" "${name}" "${name}"
+            printf '%s\n\nLicense: Apache-2.0 (see %s.LICENSE and %s.NOTICE).\n\n' "${summary}" "${MODEL_NAME}" "${MODEL_NAME}"
             printf 'SHA-256:\n```\n'; cat dist/SHA256SUMS; printf '```\n'
           } > notes.md
           gh release create "${GITHUB_REF_NAME}" dist/* --title "${GITHUB_REF_NAME}" --notes-file notes.md

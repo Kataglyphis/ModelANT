@@ -21,6 +21,7 @@ SHA-256, so no model file sits in their git history. Only permissively licensed 
 
 - **Permissive only**: code and weights under Apache-2.0, MIT or BSD, and training data that allows it.
 - **Built from a pinned upstream**: `model.json` pins the repository, commit, config and checkpoint SHA-256.
+- **Built and checked in the family's image**: its pinned CPython, torch and chain-built ONNX Runtime, never PyPI's.
 - **One release per model version**, tag `<name>-v<N>`, with the ONNX, its `LICENSE` and `NOTICE`, and `SHA256SUMS`.
 - **One output layout**: `[1, 300, 6]` boxes, score and COCO class; the ONNX metadata names the preprocessing.
 - **Compared on real camera pictures** before a model replaces another (`scripts/compare.py`).
@@ -36,10 +37,12 @@ SHA-256, so no model file sits in their git history. Only permissively licensed 
 ```bash
 git clone --branch develop https://github.com/Kataglyphis/ModelANT.git
 cd ModelANT
-bash scripts/build.sh deim_dfine_n_coco dist   # venv, pinned checkout, checkpoint, export, check
+docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
+  ghcr.io/kataglyphis/kataglyphis_beschleuniger:latest bash scripts/build.sh deim_dfine_n_coco dist
 ```
 
-It needs python3, git and network. A consumer does not build: it pins the release asset's URL
+It builds in the family's Linux image, on its pinned CPython, torch and chain-built ONNX Runtime,
+and needs network ([docs/models.md](docs/models.md#building)). A consumer does not build: it pins the release asset's URL
 and SHA-256 in a lock, as
 [`data-repositories.md` § The lock](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md#the-lock)
 describes.
@@ -49,6 +52,7 @@ describes.
 | Topic | Read |
 | --- | --- |
 | What a model looks like, and how it ran on the cameras | [docs/models.md](docs/models.md#what-a-model-looks-like) |
+| Building a model in the image | [docs/models.md](docs/models.md#building) |
 | Releasing a model | [docs/models.md](docs/models.md#releasing) |
 | Comparing a candidate, and smaller input sizes | [docs/models.md](docs/models.md#comparing-a-candidate) |
 | Adding a model | [docs/models.md](docs/models.md#adding-a-model) |

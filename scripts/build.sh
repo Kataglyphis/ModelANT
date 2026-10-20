@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds models/<name>'s ONNX from its pinned upstream: checkout, verified checkpoint, export, check.
-# Usage: scripts/build.sh <name> <out-dir>   (needs python3, git and network; writes <out-dir>/<file>)
+# Usage: scripts/build.sh <name> <out-dir>   (in the family's Linux image, needs network; writes <out-dir>/<file>)
 set -euo pipefail
 
 name="${1:?usage: build.sh <name> <out-dir>}"
@@ -8,6 +8,13 @@ out="${2:?usage: build.sh <name> <out-dir>}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 spec="${root}/models/${name}/model.json"
 [ -f "${spec}" ] || { printf 'no %s\n' "${spec}" >&2; exit 2; }
+# The image's venv holds the pinned CPython, torch, torchvision and the chain ONNX Runtime; elsewhere ORT would be PyPI's.
+image_venv=/opt/venv
+census=/opt/scripts/03-media/final/ort-venv-census.py
+if [ -z "${ORT_CHAIN_WHEEL_DIR:-}" ] || [ ! -x "${image_venv}/bin/python" ] || [ ! -f "${census}" ]; then
+  printf 'build.sh runs in ghcr.io/kataglyphis/kataglyphis_beschleuniger:latest (docs/models.md#building)\n' >&2
+  exit 2
+fi
 work="${MODELANT_WORK:-${root}/.work}"
 mkdir -p "${work}" "${out}"
 # The export runs inside the upstream checkout, so a relative <out-dir> would land there.
@@ -22,14 +29,20 @@ ckpt_sha="$(field "['upstream']['checkpoint']['sha256']")"
 drive_id="$(field "['upstream']['checkpoint']['google_drive_id']")"
 file="$(field "['file']")"
 
-if [ ! -x "${work}/venv/bin/python" ]; then
-  python3 -m venv "${work}/venv"
-  # torch from the CPU index alone: PyPI's x86_64 wheel pulls in CUDA.
-  "${work}/venv/bin/pip" install -q --index-url https://download.pytorch.org/whl/cpu torch==2.14.1 torchvision==0.29.1
-  "${work}/venv/bin/pip" install -q -r "${root}/scripts/requirements.txt"
+venv="${work}/venv"
+if [ ! -x "${venv}/bin/python" ]; then
+  "${image_venv}/bin/python" -m venv --without-pip "${venv}"
+  # The image's packages sit behind the venv's own, so pip adds only what the export lacks.
+  "${image_venv}/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))' \
+    > "$("${venv}/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')/modelant-image-venv.pth"
+  "${image_venv}/bin/python" -m pip list --format=freeze > "${work}/image-constraints.txt"
+  # Held at the image's versions, so no requirement replaces its torch, numpy or ORT.
+  "${venv}/bin/python" -m pip install -q -c "${work}/image-constraints.txt" -r "${root}/scripts/requirements.txt"
 fi
+# Every ONNX Runtime the export can import must be a chain wheel from the image.
+"${venv}/bin/python" -I "${census}" --check --store "${ORT_CHAIN_WHEEL_DIR}"
 # shellcheck disable=SC1091
-. "${work}/venv/bin/activate"
+. "${venv}/bin/activate"
 
 src="${work}/upstream-${name}"
 if [ ! -d "${src}/.git" ]; then

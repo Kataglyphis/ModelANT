@@ -12,7 +12,7 @@ spec="${root}/models/${name}/model.json"
 image_venv=/opt/venv
 census=/opt/scripts/03-media/final/ort-venv-census.py
 if [ -z "${ORT_CHAIN_WHEEL_DIR:-}" ] || [ ! -x "${image_venv}/bin/python" ] || [ ! -f "${census}" ]; then
-  printf 'build.sh runs in ghcr.io/kataglyphis/kataglyphis_beschleuniger:latest (docs/models.md#building)\n' >&2
+  printf 'build.sh runs in the family Linux image (docs/models.md#building)\n' >&2
   exit 2
 fi
 work="${MODELANT_WORK:-${root}/.work}"

@@ -36,6 +36,10 @@ docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
   ghcr.io/kataglyphis/kataglyphis_beschleuniger:latest bash scripts/build.sh deim_dfine_n_coco dist
 ```
 
+`scripts/check.sh` is the push check (`check.yml`), in the same image: every model has its spec,
+licence and notice, and every script parses on the image's pinned CPython (owner, 2026-10-20: the
+image's Python, not the runner's, at the price of the image pull).
+
 The image runs as uid 1001, which must be able to write `dist/`. Measured 2026-10-20 in `:latest`
 (Python 3.14.4, torch 2.14.1+cpu, ONNX Runtime 1.30.0): 58 s, and all five files match
 `deim_dfine_n_coco-v1`'s `SHA256SUMS` byte for byte.

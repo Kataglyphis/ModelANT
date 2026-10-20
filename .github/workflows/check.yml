@@ -1,4 +1,4 @@
-# On every push: each model has its pinned spec, license and notice, and the scripts parse.
+# On every push: each model has its pinned spec, license and notice, and the scripts parse, on the image's pinned CPython.
 name: Check
 
 on:
@@ -11,31 +11,18 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: ubuntu-26.04
+    # Almost all of it is the image pull (owner 2026-10-20: the image's Python, not the runner's).
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Every model is complete
-        run: |
-          python3 - <<'PY'
-          import json, pathlib, re, sys
-          bad = []
-          for d in sorted(pathlib.Path("models").iterdir()):
-              for f in ("model.json", "LICENSE", "NOTICE"):
-                  if not (d / f).is_file():
-                      bad.append(f"{d}: no {f}")
-              spec = json.loads((d / "model.json").read_text())
-              if spec["name"] != d.name:
-                  bad.append(f"{d}: name is {spec['name']}")
-              if not re.fullmatch(r"[0-9a-f]{40}", spec["upstream"]["commit"]):
-                  bad.append(f"{d}: upstream commit is not a full sha")
-              if not re.fullmatch(r"[0-9a-f]{64}", spec["upstream"]["checkpoint"]["sha256"]):
-                  bad.append(f"{d}: checkpoint sha256 is not 64 hex digits")
-              print(f"{d.name}: {spec['license']}, {spec['upstream']['repository']}")
-          sys.exit("\n".join(bad) if bad else 0)
-          PY
-      - name: The scripts parse
-        run: |
-          bash -n scripts/build.sh
-          shellcheck -S warning scripts/build.sh
-          python3 -m py_compile scripts/export_deim.py scripts/compare.py
+      # No `image:` here or below: the actions default it from the hub's versions.env, its one owner.
+      - name: Prepare CI host
+        uses: Kataglyphis/ANTfrastructure/.github/actions/prepare-linux-ci-host@develop
+        with:
+          fetch-depth: '1'
+          submodules: 'false'
+
+      - name: Every model is complete, and the scripts parse
+        uses: Kataglyphis/ANTfrastructure/.github/actions/run-in-linux-container@develop
+        with:
+          script: bash scripts/check.sh

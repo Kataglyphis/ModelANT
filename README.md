@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://jonasheinle.de">
-    <img src="https://raw.githubusercontent.com/Kataglyphis/ANTfrastructure/develop/images/logo.png" alt="logo" width="200" />
+    <img src="https://raw.githubusercontent.com/Kataglyphis/ModelANT/develop/images/logo.svg" alt="ModelANT logo: an ant in a detection box labelled ant 0.99" width="200" />
   </a>
 
   <h1>ModelANT</h1>

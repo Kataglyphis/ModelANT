@@ -65,4 +65,6 @@ cp "${ckpt}" "${out}/${ckpt_file}"
 cp "${root}/models/${name}/LICENSE" "${out}/${name}.LICENSE"
 cp "${root}/models/${name}/NOTICE" "${out}/${name}.NOTICE"
 cp "${spec}" "${out}/${name}.model.json"
-(cd "${out}" && sha256sum "${file}" "${name}.LICENSE" "${name}.NOTICE" "${name}.model.json" "${ckpt_file}" > SHA256SUMS && cat SHA256SUMS)
+tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -C "${root}" -cf - contracts \
+  | gzip -n > "${out}/${name}.contract.tar.gz"
+(cd "${out}" && sha256sum "${file}" "${name}.LICENSE" "${name}.NOTICE" "${name}.model.json" "${ckpt_file}" "${name}.contract.tar.gz" > SHA256SUMS && cat SHA256SUMS)

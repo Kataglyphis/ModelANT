@@ -55,6 +55,7 @@ describes.
 | Building a model in the image | [docs/models.md](docs/models.md#building) |
 | Releasing a model | [docs/models.md](docs/models.md#releasing) |
 | Comparing a candidate, and smaller input sizes | [docs/models.md](docs/models.md#comparing-a-candidate) |
+| Shared inference tensors and model validation | [contracts/README.md](contracts/README.md) |
 | Adding a model | [docs/models.md](docs/models.md#adding-a-model) |
 | Why models live outside the code, and how consumers fetch them | [ANTfrastructure: `data-repositories.md`](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md) |
 

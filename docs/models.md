@@ -18,6 +18,9 @@ with its SHA-256; `models/<name>/LICENSE` is the upstream license. The ONNX:
 Its metadata names the preprocessing (`kataglyphis.preprocess`: `stretch` or `letterbox`), so a
 consumer needs no setting.
 
+The shared [inference contract](../contracts/README.md) provides portable frame-to-tensor
+cases for Python, Rust and C++ tests, including padded frames and rounded letterbox dimensions.
+
 On the Raspberry Pi 5 (2 threads, ONNX Runtime CPU), measured 2026-10-14 against YOLO26n on 12
 arrival pictures of three real cat cameras: about 260 ms a run against 190 ms, and a cat found
 more often and more surely (0.42 -> 0.63; a lying cat YOLO26n missed was found at 0.64).
@@ -30,6 +33,11 @@ Runtime would then come from PyPI. It adds only `scripts/requirements.txt`, in a
 `/opt/venv` behind its own packages, held at the image's versions, and fails unless the hub's ORT
 census finds every ONNX Runtime the export can import to be a chain wheel. The export check
 prints the ONNX Runtime it ran on.
+
+The exporter checks all outputs for finite values, compares every confidence with its own
+tolerance, and compares confident classes exactly and boxes to one input pixel. A real
+two-cat fixture must produce two cats in both runtimes; a blank frame must produce no
+confident detection. `scripts/tests` proves that class, score, shape and NaN mutations fail.
 
 ```bash
 docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
@@ -53,7 +61,8 @@ gh workflow run release.yml --ref develop -f model=deim_dfine_n_coco   # the sam
 
 The release carries `<name>.onnx`, `<name>.LICENSE` and `<name>.NOTICE` (ship both with the
 model), `<name>.model.json`, the upstream checkpoint it came from (a mirror, so a rebuild does not
-depend on Google Drive) and `SHA256SUMS`.
+depend on Google Drive), `<name>.contract.tar.gz` with the shared test inputs and their
+permission notices, and `SHA256SUMS`.
 
 ## Comparing a candidate
 

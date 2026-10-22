@@ -12,17 +12,25 @@ from PIL import Image
 NAMES = {0: "person", 14: "bird", 15: "cat", 16: "dog", 56: "chair", 57: "couch", 62: "tv"}
 
 
+def resize_nearest_floor(img, width, height):
+    """Use the same integer-coordinate sampler as the native frame adapters."""
+    source = np.asarray(img.convert("RGB"))
+    ys = np.arange(height) * source.shape[0] // height
+    xs = np.arange(width) * source.shape[1] // width
+    return Image.fromarray(source[ys[:, None], xs[None, :]])
+
+
 def prepare(img, mode, size=640):
     w, h = img.size
     if mode == "stretch":
-        x = img.resize((size, size), Image.BILINEAR)
+        x = resize_nearest_floor(img, size, size)
         return x, lambda a, b, c, d: (a * w / size, b * h / size, c * w / size, d * h / size)
     r = min(size / w, size / h)
-    nw, nh = round(w * r), round(h * r)
+    nw, nh = max(1, int(w * r + 0.5)), max(1, int(h * r + 0.5))
     dx, dy = (size - nw) // 2, (size - nh) // 2
     x = Image.new("RGB", (size, size), (114, 114, 114))
-    x.paste(img.resize((nw, nh), Image.BILINEAR), (dx, dy))
-    return x, lambda a, b, c, d: ((a - dx) / r, (b - dy) / r, (c - dx) / r, (d - dy) / r)
+    x.paste(resize_nearest_floor(img, nw, nh), (dx, dy))
+    return x, lambda a, b, c, d: ((a - dx) * w / nw, (b - dy) * h / nh, (c - dx) * w / nw, (d - dy) * h / nh)
 
 
 def main():

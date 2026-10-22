@@ -3,6 +3,7 @@
 # S x S input's pixels and classes as 0..79 COCO indices. Its metadata names the preprocessing.
 import argparse
 import json
+from pathlib import Path
 import sys
 
 import numpy as np
@@ -10,6 +11,9 @@ import onnx
 import onnxruntime as ort
 import torch
 import torch.nn as nn
+
+from inference_contract import validate_outputs
+from compare import prepare
 
 
 def main():
@@ -74,15 +78,34 @@ def main():
     onnx.save(proto, a.out)
 
     print(f"checking with onnxruntime {ort.__version__} ({ort.__file__}) against torch {torch.__version__}")
-    got = ort.InferenceSession(a.out, providers=["CPUExecutionProvider"]).run(None, {"images": probe.numpy()})[0]
-    if got.shape != (1, 300, 6):
-        sys.exit(f"output shape {got.shape}, want (1, 300, 6)")
-    # Scores and classes of the top queries must agree with PyTorch; boxes to a pixel.
-    top = expected[0, :, 4] > 0.05
-    diff = np.abs(got[0][top] - expected[0][top]).max() if top.any() else 0.0
-    print(f"wrote {a.out}: {got.shape}, max |onnxruntime - torch| over {int(top.sum())} queries = {diff:.4f}")
-    if diff > 1.0:
-        sys.exit("onnxruntime and torch disagree")
+    session = ort.InferenceSession(a.out, providers=["CPUExecutionProvider"])
+    got = session.run(None, {"images": probe.numpy()})[0]
+    print(f"random probe: {validate_outputs(expected, got)}")
+    validate_real_inputs(model, session, a.size)
+    print(f"wrote and validated {a.out}")
+
+
+def validate_real_inputs(model, session, size):
+    """Exercise positive detections and empty-scene behaviour through both runtimes."""
+    from PIL import Image
+
+    picture = Path(__file__).resolve().parents[1] / "contracts/fixtures/two_cats.jpg"
+    with Image.open(picture) as source:
+        image, _ = prepare(source.convert("RGB"), "stretch", size)
+        positive = (np.asarray(image, dtype=np.float32) / 255.0).transpose(2, 0, 1)[None]
+    for name, pixels in (("two_cats", positive), ("blank", np.zeros_like(positive))):
+        with torch.no_grad():
+            expected = model(torch.from_numpy(pixels)).numpy()
+        got = session.run(None, {"images": pixels})[0]
+        metrics = validate_outputs(expected, got, require_positive=name == "two_cats")
+        for backend, result in (("torch", expected), ("onnxruntime", got)):
+            if name == "two_cats":
+                cats = sum(row[4] >= 0.25 and int(row[5]) == 15 for row in result[0])
+                if cats < 2:
+                    raise ValueError(f"{backend}: positive fixture found {cats} cats, need at least two")
+            elif any(row[4] >= 0.5 for row in result[0]):
+                raise ValueError(f"{backend}: blank fixture produced a confident detection")
+        print(f"{name}: {metrics}")
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bootstrap a missing pinned ANTfrastructure checkout during a real Renovate apply and update
+  direct submodules to their remote default tips; reports and previews do not clone.
 - Add the shared Renovate configuration and one-command local dependency update wrapper.
 - Add shared CI size, complexity, duplication and Ruff/ty reports, with a manual Python
   refactor preview. Generated local reports stay in ignored `logs/`.

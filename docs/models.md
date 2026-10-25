@@ -50,12 +50,13 @@ image's Python, not the runner's, at the price of the image pull).
 
 ## Dependency updates
 
-From Linux or WSL, initialize the recorded `third_party/ANTfrastructure` submodule and run
-`bash scripts/renovate-local.sh --apply` from this checkout. The thin wrapper uses this repo's
+From Linux or WSL, run `bash scripts/renovate-local.sh --apply` from this checkout. The thin
+wrapper initializes the recorded hub submodule if absent, then uses this repo's
 `.github/renovate.json` and the hub's pinned Renovate driver to update supported dependencies,
-including `scripts/requirements.txt`, GitHub Actions and submodule gitlinks. Run without
-`--apply` for a report, or use `--apply --dry-run` to verify the plan without writing. A refused
-update has a nonzero exit status and needs a deliberate fix.
+including `scripts/requirements.txt`, GitHub Actions and direct submodule gitlinks. Report and
+`--apply --dry-run` do not initialize the hub; initialize it explicitly or provide an existing
+checkout before those read-only calls. A refused update has a nonzero exit status and needs a
+deliberate fix.
 
 `model.json` pins the exact upstream commit and checkpoint bytes that produced a tested model.
 Moving these pins requires rebuilding, checking the new checkpoint SHA-256 and rerunning the

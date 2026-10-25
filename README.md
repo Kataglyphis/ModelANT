@@ -47,10 +47,10 @@ and SHA-256 in a lock, as
 [`data-repositories.md` § The lock](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md#the-lock)
 describes.
 
-To refresh this repo's Python, workflow and submodule dependencies from Linux or WSL, initialize
-`third_party/ANTfrastructure` and run `bash scripts/renovate-local.sh --apply`. Run without
-`--apply` to see the report, or use `--apply --dry-run` to verify the plan. The upstream model
-commit and checkpoint hash require the separate validation in [docs/models.md](docs/models.md#dependency-updates).
+To refresh this repo's Python, workflow and submodule dependencies from Linux or WSL, run
+`bash scripts/renovate-local.sh --apply`; it initializes a missing pinned hub. For a report or
+`--apply --dry-run`, first initialize the hub or use an existing checkout. The upstream model
+commit and checkpoint hash require separate validation in [docs/models.md](docs/models.md#dependency-updates).
 
 ## Documentation
 

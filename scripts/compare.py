@@ -1,7 +1,4 @@
-# Runs ONNX detectors in the [1, N, 6] layout on the same pictures: time per run and what each finds.
-# Each model's preprocessing comes from its kataglyphis.preprocess metadata; a model without it is letterboxed,
-# as Ultralytics exports expect. Usage:
-#   python scripts/compare.py --model a.onnx --model b.onnx [--class 15] [--threads 2] picture.jpg ...
+# Missing preprocessing metadata uses letterboxing to match Ultralytics exports.
 import argparse
 import time
 

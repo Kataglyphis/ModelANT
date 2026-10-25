@@ -1,6 +1,4 @@
-# Exports a DEIM checkpoint to ONNX as kataglyphis_inference parses it: input `images` [1, 3, S, S]
-# (RGB, 0..1, plain resize) and output `output0` [1, 300, 6] = x1, y1, x2, y2, score, class, boxes in the
-# S x S input's pixels and classes as 0..79 COCO indices. Its metadata names the preprocessing.
+# Export metadata fixes the input and output contract consumed by kataglyphis_inference.
 import argparse
 import json
 from pathlib import Path

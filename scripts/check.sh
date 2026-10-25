@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Every model is complete and every script parses, on the image's pinned CPython (check.yml runs it).
-# Usage: scripts/check.sh   (in the family's Linux image)
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

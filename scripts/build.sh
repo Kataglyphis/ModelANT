@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Builds models/<name>'s ONNX from its pinned upstream: checkout, verified checkpoint, export, check.
-# Usage: scripts/build.sh <name> <out-dir>   (in the family's Linux image, needs network; writes <out-dir>/<file>)
 set -euo pipefail
 
 name="${1:?usage: build.sh <name> <out-dir>}"

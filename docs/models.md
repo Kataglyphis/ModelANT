@@ -48,6 +48,19 @@ docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
 licence and notice, and every script parses on the image's pinned CPython (owner, 2026-10-20: the
 image's Python, not the runner's, at the price of the image pull).
 
+## Dependency updates
+
+From Linux or WSL, initialize the recorded `third_party/ANTfrastructure` submodule and run
+`bash scripts/renovate-local.sh --apply` from this checkout. The thin wrapper uses this repo's
+`.github/renovate.json` and the hub's pinned Renovate driver to update supported dependencies,
+including `scripts/requirements.txt`, GitHub Actions and submodule gitlinks. Run without
+`--apply` for a report, or use `--apply --dry-run` to verify the plan without writing. A refused
+update has a nonzero exit status and needs a deliberate fix.
+
+`model.json` pins the exact upstream commit and checkpoint bytes that produced a tested model.
+Moving these pins requires rebuilding, checking the new checkpoint SHA-256 and rerunning the
+export and regression suite. A general dependency bump cannot validate a replacement model.
+
 The image runs as uid 1001, which must be able to write `dist/`. Measured 2026-10-20 in `:latest`
 (Python 3.14.4, torch 2.14.1+cpu, ONNX Runtime 1.30.0): 58 s, and all five files match
 `deim_dfine_n_coco-v1`'s `SHA256SUMS` byte for byte.

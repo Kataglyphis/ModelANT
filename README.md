@@ -47,11 +47,17 @@ and SHA-256 in a lock, as
 [`data-repositories.md` § The lock](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md#the-lock)
 describes.
 
+To refresh this repo's Python, workflow and submodule dependencies from Linux or WSL, initialize
+`third_party/ANTfrastructure` and run `bash scripts/renovate-local.sh --apply`. Run without
+`--apply` to see the report, or use `--apply --dry-run` to verify the plan. The upstream model
+commit and checkpoint hash require the separate validation in [docs/models.md](docs/models.md#dependency-updates).
+
 ## Documentation
 
 | Topic | Read |
 | --- | --- |
 | What a model looks like, and how it ran on the cameras | [docs/models.md](docs/models.md#what-a-model-looks-like) |
+| Updating dependencies | [docs/models.md](docs/models.md#dependency-updates) |
 | Building a model in the image | [docs/models.md](docs/models.md#building) |
 | Releasing a model | [docs/models.md](docs/models.md#releasing) |
 | Comparing a candidate, and smaller input sizes | [docs/models.md](docs/models.md#comparing-a-candidate) |

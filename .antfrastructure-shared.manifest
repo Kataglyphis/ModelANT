@@ -1,1 +1,2 @@
-# This data repository holds no copied hub assets.
+# The bootstrap must sit outside the hub submodule so it can find that submodule.
+antfrastructure-sh scripts/lib/antfrastructure.sh

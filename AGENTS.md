@@ -3,6 +3,8 @@
 Models and reference data are checksum-pinned releases; never commit weights. The scripts
 and model exports run in ANTfrastructure's family image, using its chain-built ONNX Runtime.
 `bash scripts/check.sh` checks metadata, shell scripts and numerical regression tests.
+`bash scripts/renovate-local.sh --apply` updates supported repo dependencies via ANTfrastructure;
+model source commits and checkpoint hashes require the rebuild and validation in `docs/models.md`.
 
 `contracts/inference-v1.json` is shared with native consumer tests. Change its version when
 changing existing cases or their semantics. New cases may be appended. The exporter must

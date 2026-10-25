@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add the shared Renovate configuration and one-command local dependency update wrapper.
 - Add shared CI size, complexity, duplication and Ruff/ty reports, with a manual Python
   refactor preview. Generated local reports stay in ignored `logs/`.
 - Reject nonfinite model outputs, confidence/class errors and vacuous positive-fixture checks.

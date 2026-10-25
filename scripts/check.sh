@@ -31,7 +31,7 @@ sys.exit("\n".join(bad) if bad else 0)
 PY
 
 bash -n scripts/build.sh scripts/check.sh
-shellcheck -S warning scripts/build.sh scripts/check.sh
+shellcheck -x -P scripts -S warning scripts/build.sh scripts/check.sh scripts/renovate-local.sh scripts/lib/antfrastructure.sh
 # compile(), not py_compile: nothing is written into the checkout.
 "${python}" -I -c 'import sys; [compile(open(f, encoding="utf-8").read(), f, "exec") for f in sys.argv[1:]]' \
   scripts/export_deim.py scripts/compare.py

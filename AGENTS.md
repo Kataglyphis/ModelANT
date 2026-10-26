@@ -1,5 +1,11 @@
 # ModelANT
 
+**Reuse before adding Bash or PowerShell code.** Search this repository and every direct
+submodule, including `third_party/ANTfrastructure`, for an existing implementation. Call or
+extend its canonical owner, passing project-specific values as arguments. For new behavior
+needed by multiple consumers, create or extend one shared owner module and call it here.
+Keep unique product logic in this repository.
+
 Models and reference data are checksum-pinned releases; never commit weights. The scripts
 and model exports run in ANTfrastructure's family image, using its chain-built ONNX Runtime.
 `bash scripts/check.sh` checks metadata and numerical regression tests in the family image.

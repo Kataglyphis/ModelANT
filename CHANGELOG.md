@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Search this repository and its direct submodules before adding Bash or PowerShell code.
 - Fail CI on duplicated tracked blocks through the shared duplication scanner, with no frozen
   exceptions in this repository.
 - Reuse ANTfrastructure's Python interpreter probe in the image check and rely on the shared

@@ -57,6 +57,7 @@ commit and checkpoint hash require separate validation in [docs/models.md](docs/
 
 | Topic | Read |
 | --- | --- |
+| Shared Bash and PowerShell reuse rules | [AGENTS.md](AGENTS.md) |
 | What a model looks like, and how it ran on the cameras | [docs/models.md](docs/models.md#what-a-model-looks-like) |
 | Updating dependencies | [docs/models.md](docs/models.md#dependency-updates) |
 | Building a model in the image | [docs/models.md](docs/models.md#building) |

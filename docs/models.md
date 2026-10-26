@@ -51,7 +51,8 @@ with ANTfrastructure's `ci_image_python_require` and still requires the image's
 `PYTHON_MAJOR_MINOR` marker, so a host Python cannot pass. The separate `lint-gates.yml` workflow
 checks all tracked shell scripts with ANTfrastructure's pinned ShellCheck and warning ratchet on
 every push and pull request. It also fails on duplicated tracked blocks; this repository needs no
-duplication exceptions.
+duplication exceptions. Before adding Bash or PowerShell behavior, search this repository and
+direct submodules for a shared implementation; [AGENTS.md](../AGENTS.md) names the reuse rule.
 
 ## Dependency updates
 

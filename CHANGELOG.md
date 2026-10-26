@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use the shared Windows Git helper so a WSL Renovate run can update a Windows checkout without
+  treating its CRLF `.gitmodules` as a local edit.
 - Bootstrap a missing pinned ANTfrastructure checkout during a real Renovate apply and update
   direct submodules to their remote default tips; reports and previews do not clone.
 - Add the shared Renovate configuration and one-command local dependency update wrapper.

@@ -9,6 +9,7 @@
 </div>
 
 [![Check](https://github.com/Kataglyphis/ModelANT/actions/workflows/check.yml/badge.svg)](https://github.com/Kataglyphis/ModelANT/actions/workflows/check.yml)
+[![Quality gates](https://github.com/Kataglyphis/ModelANT/actions/workflows/lint-gates.yml/badge.svg)](https://github.com/Kataglyphis/ModelANT/actions/workflows/lint-gates.yml)
 
 [**Releases**](https://github.com/Kataglyphis/ModelANT/releases)
 
@@ -64,7 +65,7 @@ commit and checkpoint hash require separate validation in [docs/models.md](docs/
 | Shared inference tensors and model validation | [contracts/README.md](contracts/README.md) |
 | Adding a model | [docs/models.md](docs/models.md#adding-a-model) |
 | Why models live outside the code, and how consumers fetch them | [ANTfrastructure: `data-repositories.md`](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md) |
-| CI quality reports, Ruff/ty and refactor previews | [Shared quality tooling](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/code-quality-tooling.md) |
+| CI quality reports, strict duplication checks, Ruff/ty and refactor previews | [Shared quality tooling](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/code-quality-tooling.md) |
 
 ## Contributing and contact
 

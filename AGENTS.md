@@ -2,7 +2,8 @@
 
 Models and reference data are checksum-pinned releases; never commit weights. The scripts
 and model exports run in ANTfrastructure's family image, using its chain-built ONNX Runtime.
-`bash scripts/check.sh` checks metadata, shell scripts and numerical regression tests.
+`bash scripts/check.sh` checks metadata and numerical regression tests in the family image.
+The shared `lint-gates.yml` workflow checks shell scripts on every push and pull request.
 `bash scripts/renovate-local.sh --apply` updates supported repo dependencies via ANTfrastructure;
 model source commits and checkpoint hashes require the rebuild and validation in `docs/models.md`.
 

@@ -1,4 +1,4 @@
-# On every push: each model has its pinned spec, license and notice, and the scripts parse, on the image's pinned CPython.
+# Model checks use the family image; the companion lint workflow grades every tracked shell script.
 name: Check
 
 on:
@@ -20,9 +20,9 @@ jobs:
         uses: Kataglyphis/ANTfrastructure/.github/actions/prepare-linux-ci-host@develop
         with:
           fetch-depth: '1'
-          submodules: 'false'
+          submodules: 'true'
 
-      - name: Every model is complete, and the scripts parse
+      - name: Validate model metadata and Python regression tests
         uses: Kataglyphis/ANTfrastructure/.github/actions/run-in-linux-container@develop
         with:
           script: bash scripts/check.sh

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fail CI on duplicated tracked blocks through the shared duplication scanner, with no frozen
+  exceptions in this repository.
+- Reuse ANTfrastructure's Python interpreter probe in the image check and rely on the shared
+  lint workflow for tracked shell scripts on every push and pull request.
 - Use the shared Windows Git helper so a WSL Renovate run can update a Windows checkout without
   treating its CRLF `.gitmodules` as a local edit.
 - Bootstrap a missing pinned ANTfrastructure checkout during a real Renovate apply and update

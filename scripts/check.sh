@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# Every model is complete and every script parses, on the image's pinned CPython (check.yml runs it).
+# Model checks run inside the family image to use its pinned Python and native dependencies.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${root}"
-# The pinned CPython lives in the image's venv; the runner's own python3 is another version.
-if [ ! -x /opt/venv/bin/python3 ] || [ -z "${PYTHON_MAJOR_MINOR:-}" ]; then
-  printf 'check.sh runs in the family Linux image (docs/models.md#building)\n' >&2
-  exit 2
-fi
-python=/opt/venv/bin/python3
+# shellcheck source=lib/antfrastructure.sh
+source "${root}/scripts/lib/antfrastructure.sh"
+antfrastructure_source linux/scripts/01-core/python-probe.sh
+ci_image_python_require check.sh docs/models.md#building || exit $?
+python="${PREFLIGHT_PYTHON}"
 printf 'python: %s\n' "$("${python}" --version)"
 
 "${python}" -I - <<'PY'
@@ -30,8 +29,6 @@ for d in sorted(pathlib.Path("models").iterdir()):
 sys.exit("\n".join(bad) if bad else 0)
 PY
 
-bash -n scripts/build.sh scripts/check.sh
-shellcheck -x -P scripts -S warning scripts/build.sh scripts/check.sh scripts/renovate-local.sh scripts/lib/antfrastructure.sh
 # compile(), not py_compile: nothing is written into the checkout.
 "${python}" -I -c 'import sys; [compile(open(f, encoding="utf-8").read(), f, "exec") for f in sys.argv[1:]]' \
   scripts/export_deim.py scripts/compare.py

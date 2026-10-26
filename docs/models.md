@@ -45,8 +45,13 @@ docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
 ```
 
 `scripts/check.sh` is the push check (`check.yml`), in the same image: every model has its spec,
-licence and notice, and every script parses on the image's pinned CPython (owner, 2026-10-20: the
-image's Python, not the runner's, at the price of the image pull).
+licence and notice, and the Python regression tests use the image's pinned CPython. Initialize
+`third_party/ANTfrastructure` before running it in a fresh checkout. It resolves that interpreter
+with ANTfrastructure's `ci_image_python_require` and still requires the image's
+`PYTHON_MAJOR_MINOR` marker, so a host Python cannot pass. The separate `lint-gates.yml` workflow
+checks all tracked shell scripts with ANTfrastructure's pinned ShellCheck and warning ratchet on
+every push and pull request. It also fails on duplicated tracked blocks; this repository needs no
+duplication exceptions.
 
 ## Dependency updates
 

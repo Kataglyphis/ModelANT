@@ -2,9 +2,7 @@ name: Linux x64 · quality gates
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -16,3 +14,4 @@ jobs:
     with:
       submodules: 'true'
       ratchets: true
+      code-dupes: true

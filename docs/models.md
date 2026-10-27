@@ -90,7 +90,9 @@ gh workflow run release.yml --ref develop -f model=deim_dfine_n_coco   # the sam
 The release carries `<name>.onnx`, `<name>.LICENSE` and `<name>.NOTICE` (ship both with the
 model), `<name>.model.json`, the upstream checkpoint it came from (a mirror, so a rebuild does not
 depend on Google Drive), `<name>.contract.tar.gz` with the shared test inputs and their
-permission notices, and `SHA256SUMS`.
+permission notices, and `SHA256SUMS`. The contract archive also carries the project `LICENSE`
+and `NOTICE`; the shared package verifier checks all four texts before the archive is published.
+The shared mutation workflow checks that omission and bypassing the verifier both fail CI.
 
 ## Comparing a candidate
 

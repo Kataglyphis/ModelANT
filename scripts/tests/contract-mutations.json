@@ -1,0 +1,18 @@
+[
+  {
+    "id": "contract.project-license-shipped",
+    "target": "scripts/pack-contract.sh",
+    "find": "-cf - LICENSE NOTICE contracts | gzip -n",
+    "replace": "-cf - NOTICE contracts | gzip -n",
+    "test": "bash scripts/tests/test-contract-package.sh",
+    "why": "The release archive must contain the complete project license."
+  },
+  {
+    "id": "contract.verification-fatal",
+    "target": "scripts/pack-contract.sh",
+    "find": "python3 \"${verifier}\" \"${temporary}\" \\",
+    "replace": "true \\",
+    "test": "bash scripts/tests/test-contract-package.sh",
+    "why": "An archive missing a declared text must not replace a valid prior artifact."
+  }
+]

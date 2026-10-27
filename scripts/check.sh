@@ -35,4 +35,5 @@ PY
 "${python}" -I -m unittest discover -s scripts/tests -p 'test_*.py'
 bash scripts/tests/test-overlay-cleanup.sh
 bash scripts/tests/check-image-lock.sh
+bash scripts/tests/test-contract-package.sh
 printf 'check: ok\n'

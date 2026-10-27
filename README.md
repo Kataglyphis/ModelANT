@@ -23,7 +23,7 @@ SHA-256, so no model file sits in their git history. Only permissively licensed 
 - **Permissive only**: code and weights under Apache-2.0, MIT or BSD, and training data that allows it.
 - **Built from a pinned upstream**: `model.json` pins the repository, commit, config and checkpoint SHA-256.
 - **Built and checked in the family's image**: its pinned CPython, torch and chain-built ONNX Runtime, never PyPI's.
-- **One release per model version**, tag `<name>-v<N>`, with the ONNX, its `LICENSE` and `NOTICE`, and `SHA256SUMS`.
+- **One release per model version**, tag `<name>-v<N>`, with the ONNX, its `LICENSE` and `NOTICE`, a license-checked contract archive, and `SHA256SUMS`.
 - **One output layout**: `[1, 300, 6]` boxes, score and COCO class; the ONNX metadata names the preprocessing.
 - **Compared on real camera pictures** before a model replaces another (`scripts/compare.py`).
 

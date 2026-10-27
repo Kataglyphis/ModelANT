@@ -29,10 +29,17 @@ more often and more surely (0.42 -> 0.63; a lying cat YOLO26n missed was found a
 
 `scripts/build.sh` runs in the family's Linux image, on its pinned CPython and the torch,
 torchvision and chain-built ONNX Runtime of its `/opt/venv`; anywhere else it stops, since ONNX
-Runtime would then come from PyPI. It adds only `scripts/requirements.txt`, in a venv that sees
-`/opt/venv` behind its own packages, held at the image's versions, and fails unless the hub's ORT
-census finds every ONNX Runtime the export can import to be a chain wheel. The export check
-prints the ONNX Runtime it ran on.
+Runtime would then come from PyPI. `pyproject.toml` declares the export dependencies and `uv.lock`
+locks their versions and hashes. Each build creates a fresh overlay venv that sees `/opt/venv`
+behind its own packages. The shared overlay helper validates the image versions against the lock,
+checks dependency metadata before installing, and installs only missing locked packages. The ORT
+census and runtime module paths are checked both before and after installation.
+
+Torch, torchvision, ONNX Runtime, NumPy, Pillow, PyYAML and SciPy come from the family image;
+they are excluded from uv's resolver because the chain's Python 3.15 Torch is not a PyPI wheel.
+Five additional direct dependencies pin packages shared by this lock and the current image. When
+either side changes, the build fails until those versions match; update them with the image and
+regenerate `uv.lock`, then run `scripts/tests/check-image-lock.sh` in the family image.
 
 The exporter checks all outputs for finite values, compares every confidence with its own
 tolerance, and compares confident classes exactly and boxes to one input pixel. A real
@@ -45,7 +52,8 @@ docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
 ```
 
 `scripts/check.sh` is the push check (`check.yml`), in the same image: every model has its spec,
-licence and notice, and the Python regression tests use the image's pinned CPython. Initialize
+licence and notice, the Python regression tests use the image's pinned CPython, and a fresh overlay
+is installed and checked against the image and its ORT wheel store. Initialize
 `third_party/ANTfrastructure` before running it in a fresh checkout. It resolves that interpreter
 with ANTfrastructure's `ci_image_python_require` and still requires the image's
 `PYTHON_MAJOR_MINOR` marker, so a host Python cannot pass. The separate `lint-gates.yml` workflow
@@ -59,7 +67,7 @@ direct submodules for a shared implementation; [AGENTS.md](../AGENTS.md) names t
 From Linux or WSL, run `bash scripts/renovate-local.sh --apply` from this checkout. The thin
 wrapper initializes the recorded hub submodule if absent, then uses this repo's
 `.github/renovate.json` and the hub's pinned Renovate driver to update supported dependencies,
-including `scripts/requirements.txt`, GitHub Actions and direct submodule gitlinks. Report and
+including `pyproject.toml`, `uv.lock`, GitHub Actions and direct submodule gitlinks. Report and
 `--apply --dry-run` do not initialize the hub; initialize it explicitly or provide an existing
 checkout before those read-only calls. A refused update has a nonzero exit status and needs a
 deliberate fix.

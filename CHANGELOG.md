@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Lock export dependencies with uv and validate their image-provided dependencies before installing a fresh overlay.
 - Search this repository and its direct submodules before adding Bash or PowerShell code.
 - Fail CI on duplicated tracked blocks through the shared duplication scanner, with no frozen
   exceptions in this repository.

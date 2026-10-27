@@ -5,6 +5,9 @@ set -euo pipefail
 name="${1:?usage: build.sh <name> <out-dir>}"
 out="${2:?usage: build.sh <name> <out-dir>}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/antfrastructure.sh
+source "${root}/scripts/lib/antfrastructure.sh"
+antfrastructure_source linux/scripts/01-core/uv-image-overlay.sh
 spec="${root}/models/${name}/model.json"
 [ -f "${spec}" ] || { printf 'no %s\n' "${spec}" >&2; exit 2; }
 # The image's venv holds the pinned CPython, torch, torchvision and the chain ONNX Runtime; elsewhere ORT would be PyPI's.
@@ -28,17 +31,18 @@ ckpt_sha="$(field "['upstream']['checkpoint']['sha256']")"
 drive_id="$(field "['upstream']['checkpoint']['google_drive_id']")"
 file="$(field "['file']")"
 
-venv="${work}/venv"
-if [ ! -x "${venv}/bin/python" ]; then
-  "${image_venv}/bin/python" -m venv --without-pip "${venv}"
-  # The image's packages sit behind the venv's own, so pip adds only what the export lacks.
-  "${image_venv}/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))' \
-    > "$("${venv}/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')/modelant-image-venv.pth"
-  "${image_venv}/bin/python" -m pip list --format=freeze > "${work}/image-constraints.txt"
-  # Held at the image's versions, so no requirement replaces its torch, numpy or ORT.
-  "${venv}/bin/python" -m pip install -q -c "${work}/image-constraints.txt" -r "${root}/scripts/requirements.txt"
-fi
+venv="$(mktemp -d "${work}/venv.XXXXXXXXXX")"
+trap 'uv_image_overlay_exit "$?" "${venv}"' EXIT
+"${image_venv}/bin/python" -m venv --without-pip "${venv}"
+# Image packages remain behind the fresh overlay in Python's import order.
+"${image_venv}/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))' \
+  > "$("${venv}/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')/modelant-image-venv.pth"
 # Every ONNX Runtime the export can import must be a chain wheel from the image.
+"${venv}/bin/python" -I "${census}" --check --store "${ORT_CHAIN_WHEEL_DIR}"
+uv_image_overlay_verify_modules "${venv}/bin/python" "${image_venv}" torch torchvision onnxruntime numpy PIL yaml scipy
+mkdir -p "${venv}/uv-overlay"
+(cd "${root}" && uv_image_overlay_install "${image_venv}/bin/python" "${venv}/bin/python" "${venv}/uv-overlay")
+uv_image_overlay_verify_modules "${venv}/bin/python" "${image_venv}" torch torchvision onnxruntime numpy PIL yaml scipy
 "${venv}/bin/python" -I "${census}" --check --store "${ORT_CHAIN_WHEEL_DIR}"
 # shellcheck disable=SC1091
 . "${venv}/bin/activate"

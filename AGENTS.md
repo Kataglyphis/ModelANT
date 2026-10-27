@@ -12,6 +12,8 @@ and model exports run in ANTfrastructure's family image, using its chain-built O
 The shared `lint-gates.yml` workflow checks shell scripts on every push and pull request.
 `bash scripts/renovate-local.sh --apply` updates supported repo dependencies via ANTfrastructure;
 model source commits and checkpoint hashes require the rebuild and validation in `docs/models.md`.
+The export environment uses `pyproject.toml` and `uv.lock`; image packages and matching constraints
+must satisfy the shared overlay check before installation, and the ORT census runs on both sides.
 
 `contracts/inference-v1.json` is shared with native consumer tests. Change its version when
 changing existing cases or their semantics. New cases may be appended. The exporter must

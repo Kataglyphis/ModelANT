@@ -52,6 +52,8 @@ To refresh this repo's Python, workflow and submodule dependencies from Linux or
 `bash scripts/renovate-local.sh --apply`; it initializes a missing pinned hub. For a report or
 `--apply --dry-run`, first initialize the hub or use an existing checkout. The upstream model
 commit and checkpoint hash require separate validation in [docs/models.md](docs/models.md#dependency-updates).
+Python export dependencies are declared in `pyproject.toml` and locked in `uv.lock`; the image's
+Torch and ONNX Runtime are checked and retained during installation.
 
 ## Documentation
 

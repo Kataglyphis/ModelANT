@@ -25,6 +25,32 @@ On the Raspberry Pi 5 (2 threads, ONNX Runtime CPU), measured 2026-10-14 against
 arrival pictures of three real cat cameras: about 260 ms a run against 190 ms, and a cat found
 more often and more surely (0.42 -> 0.63; a lying cat YOLO26n missed was found at 0.64).
 
+## A language model
+
+A model with `"kind": "text-generation"` in `model.json` is a directory for ONNX Runtime GenAI,
+built by `scripts/export_genai.py`:
+
+- **Upstream:** `upstream.commit` is the Hugging Face revision, `upstream.checkpoint` the weights
+  and `upstream.files` every other file the builder reads, each with its SHA-256. The hub's
+  `fetch-data-lock.py` downloads them, so a mismatch fails as for any other lock.
+- **Export:** the image's chain `onnxruntime_genai.models.builder`, called through its Python
+  API at `genai.precision` for `genai.execution_provider`. Its CLI cannot start on Python 3.15:
+  `argparse` rejects the unescaped `%` in the `--extra_options` help of GenAI v0.17.0.
+- **Contract:** every case of `contracts/text-generation-v1.json` that names the directory is
+  decoded greedily through the model's own chat template. The text must contain `must_contain`
+  and the new tokens must equal `expected_ids`; a case without recorded ids fails and prints the
+  ids its export produced, so recording them is a reviewed commit.
+- **Release files:** `<directory>.tar.xz`, a byte-reproducible archive whose one top directory is
+  the model directory (the hub fetcher's `--extract`), and `<package>_<release>_all.deb`, which
+  installs it to `package.install_dir` with the license and notice as its copyright file.
+
+| Model | Precision | Archive | Contract case |
+| --- | --- | --- | --- |
+| `smollm2_135m_instruct` | int4, CPU | 70 MB | "The capital of France is Paris." |
+
+There is no Windows package yet, and the upstream files are not mirrored in the release, so a
+rebuild depends on Hugging Face.
+
 ## Building
 
 `scripts/build.sh` runs in the family's Linux image, on its pinned CPython and the torch,

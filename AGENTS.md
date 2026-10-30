@@ -20,6 +20,8 @@ changing existing cases or their semantics. New cases may be appended. The expor
 check a real positive fixture, a blank frame, finite outputs, exact confident classes and
 separate confidence/coordinate tolerances. A release includes the deterministic contract
 archive and its licences in `SHA256SUMS`.
+`contracts/text-generation-v1.json` holds the greedy token ids of every GenAI model directory;
+a new GenAI model needs a case there, and recording its ids is a reviewed commit.
 The contract archive includes the project LICENSE and NOTICE as well as fixture notices; the
 shared package verifier checks the completed archive before publication.
 The reusable mutation workflow proves both that the project license is packed and that failed

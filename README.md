@@ -33,6 +33,9 @@ SHA-256, so no model file sits in their git history. Every model's license and i
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `deim_dfine_n_coco` | Apache-2.0 | COCO 80 | 4 M | 7 | 43.0 | 640x640, plain resize | `deim_dfine_n_coco-v1` |
 
+Language models for ONNX Runtime GenAI: `smollm2_135m_instruct` (Apache-2.0, 135 M parameters, int4
+on the CPU), with a `.deb` model package ([docs/models.md](docs/models.md#a-language-model)).
+
 ## Quick start
 
 ```bash

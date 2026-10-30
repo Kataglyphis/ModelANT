@@ -15,3 +15,10 @@ image must contain at least two cats; the blank image must contain no confident 
 The model release carries this contract and the fixtures as `<name>.contract.tar.gz`, covered
 by its `SHA256SUMS`. Source-only consumers may pin ModelANT as a test submodule; weights
 remain checksum-pinned release assets. No production backend depends on Python validation.
+
+# Text-generation contract v1
+
+`text-generation-v1.json` holds chat cases for GenAI model directories: the messages, a token
+budget, a fact the answer must contain and the token ids the release export produced under
+greedy decoding on the CPU. The export fails a model without a case; consumers can replay the
+cases against their own binding of the same release.

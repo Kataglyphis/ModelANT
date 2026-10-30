@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds models/<name>'s ONNX from its pinned upstream: checkout, verified checkpoint, export, check.
+# Builds models/<name> from its pinned upstream by its kind: a detector's ONNX or a GenAI model and its package.
 set -euo pipefail
 
 name="${1:?usage: build.sh <name> <out-dir>}"
@@ -23,13 +23,8 @@ mkdir -p "${work}" "${out}"
 out="$(cd "${out}" && pwd)"
 
 field() { python3 -c "import json,sys; d=json.load(open('${spec}')); print(eval('d' + sys.argv[1]))" "$1"; }
-repo="$(field "['upstream']['repository']")"
-commit="$(field "['upstream']['commit']")"
-config="$(field "['upstream']['config']")"
-ckpt_file="$(field "['upstream']['checkpoint']['file']")"
-ckpt_sha="$(field "['upstream']['checkpoint']['sha256']")"
-drive_id="$(field "['upstream']['checkpoint']['google_drive_id']")"
 file="$(field "['file']")"
+kind="$(field ".get('kind', 'detection')")"
 
 venv="$(mktemp -d "${work}/venv.XXXXXXXXXX")"
 trap 'uv_image_overlay_exit "$?" "${venv}"' EXIT
@@ -47,26 +42,46 @@ uv_image_overlay_verify_modules "${venv}/bin/python" "${image_venv}" torch torch
 # shellcheck disable=SC1091
 . "${venv}/bin/activate"
 
-src="${work}/upstream-${name}"
-if [ ! -d "${src}/.git" ]; then
-  git clone -q "${repo}" "${src}"
-fi
-git -C "${src}" fetch -q origin "${commit}" 2>/dev/null || true
-git -C "${src}" checkout -q "${commit}"
+build_detection() {
+  local repo commit config ckpt_file ckpt_sha drive_id src ckpt
+  repo="$(field "['upstream']['repository']")"
+  commit="$(field "['upstream']['commit']")"
+  config="$(field "['upstream']['config']")"
+  ckpt_file="$(field "['upstream']['checkpoint']['file']")"
+  ckpt_sha="$(field "['upstream']['checkpoint']['sha256']")"
+  drive_id="$(field "['upstream']['checkpoint']['google_drive_id']")"
+  src="${work}/upstream-${name}"
+  if [ ! -d "${src}/.git" ]; then
+    git clone -q "${repo}" "${src}"
+  fi
+  git -C "${src}" fetch -q origin "${commit}" 2>/dev/null || true
+  git -C "${src}" checkout -q "${commit}"
+  ckpt="${work}/${ckpt_file}"
+  # The release's own mirror first, then the upstream's Google Drive.
+  if [ ! -s "${ckpt}" ] && [ -n "${MODELANT_CHECKPOINT_URL:-}" ]; then
+    curl -fsSL -o "${ckpt}" "${MODELANT_CHECKPOINT_URL}" || rm -f "${ckpt}"
+  fi
+  [ -s "${ckpt}" ] || gdown -q "${drive_id}" -O "${ckpt}"
+  printf '%s  %s\n' "${ckpt_sha}" "${ckpt}" | sha256sum -c --quiet - || { printf 'checkpoint %s does not match its sha256\n' "${ckpt}" >&2; exit 1; }
+  (cd "${src}" && python3 "${root}/scripts/export_deim.py" --deim "${src}" --config "${config}" \
+    --checkpoint "${ckpt}" --model-json "${spec}" --out "${out}/${file}")
+  cp "${ckpt}" "${out}/${ckpt_file}"
+  released=("${file}" "${ckpt_file}")
+}
 
-ckpt="${work}/${ckpt_file}"
-# The release's own mirror first, then the upstream's Google Drive.
-if [ ! -s "${ckpt}" ] && [ -n "${MODELANT_CHECKPOINT_URL:-}" ]; then
-  curl -fsSL -o "${ckpt}" "${MODELANT_CHECKPOINT_URL}" || rm -f "${ckpt}"
-fi
-[ -s "${ckpt}" ] || gdown -q "${drive_id}" -O "${ckpt}"
-printf '%s  %s\n' "${ckpt_sha}" "${ckpt}" | sha256sum -c --quiet - || { printf 'checkpoint %s does not match its sha256\n' "${ckpt}" >&2; exit 1; }
+build_text_generation() {
+  python3 "${root}/scripts/export_genai.py" --model-json "${spec}" --work "${work}" --out "${out}"
+  released=("${file}" "$(field "['package']['name']")_$(field "['release']")_all.deb")
+}
 
-(cd "${src}" && python3 "${root}/scripts/export_deim.py" --deim "${src}" --config "${config}" \
-  --checkpoint "${ckpt}" --model-json "${spec}" --out "${out}/${file}")
-cp "${ckpt}" "${out}/${ckpt_file}"
+released=()
+case "${kind}" in
+  detection) build_detection ;;
+  text-generation) build_text_generation ;;
+  *) printf 'unknown model kind %s in %s\n' "${kind}" "${spec}" >&2; exit 2 ;;
+esac
 cp "${root}/models/${name}/LICENSE" "${out}/${name}.LICENSE"
 cp "${root}/models/${name}/NOTICE" "${out}/${name}.NOTICE"
 cp "${spec}" "${out}/${name}.model.json"
 bash "${root}/scripts/pack-contract.sh" "${out}/${name}.contract.tar.gz"
-(cd "${out}" && sha256sum "${file}" "${name}.LICENSE" "${name}.NOTICE" "${name}.model.json" "${ckpt_file}" "${name}.contract.tar.gz" > SHA256SUMS && cat SHA256SUMS)
+(cd "${out}" && sha256sum "${released[@]}" "${name}.LICENSE" "${name}.NOTICE" "${name}.model.json" "${name}.contract.tar.gz" > SHA256SUMS && cat SHA256SUMS)

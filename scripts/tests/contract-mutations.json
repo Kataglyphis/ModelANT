@@ -38,5 +38,45 @@
     "replace": "    pass",
     "test": "python3 -I scripts/tests/test_model_metadata.py",
     "why": "check.sh reaches the license rule only through the metadata check; dropping the call passes any license."
+  },
+  {
+    "id": "genai.unrecorded-case-fails",
+    "target": "scripts/export_genai.py",
+    "find": "    if case[\"expected_ids\"] is None:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_export_genai.py",
+    "why": "A contract case without recorded tokens must fail and print them, never pass on the text check alone."
+  },
+  {
+    "id": "genai.text-must-match",
+    "target": "scripts/export_genai.py",
+    "find": "    if case[\"must_contain\"] not in text:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_export_genai.py",
+    "why": "The recorded tokens could encode a wrong answer; the decoded text must still name the expected fact."
+  },
+  {
+    "id": "genai.model-needs-a-case",
+    "target": "scripts/export_genai.py",
+    "find": "    if not cases:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_export_genai.py",
+    "why": "A model directory no case names would publish with no decode checked at all."
+  },
+  {
+    "id": "genai.archive-reproducible",
+    "target": "scripts/export_genai.py",
+    "find": "    info.mtime = 0",
+    "replace": "    info.mtime = int(info.mtime)",
+    "test": "python3 -I scripts/tests/test_export_genai.py",
+    "why": "Releases are immutable and hashed; an archive that changes with file times cannot be rebuilt to the same bytes."
+  },
+  {
+    "id": "genai.package-notices",
+    "target": "scripts/export_genai.py",
+    "find": "    (doc / \"copyright\").write_text(\"\\n\".join(p.read_text() for p in notices))",
+    "replace": "    pass",
+    "test": "python3 -I scripts/tests/test_export_genai.py",
+    "why": "The model package must carry the license and notice that the model's license obliges every redistribution to ship."
   }
 ]

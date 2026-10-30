@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Build text-generation models for ONNX Runtime GenAI: `scripts/export_genai.py` fetches the pinned
+  Hugging Face files through the hub's lock fetcher, exports them with the image's chain GenAI
+  builder, checks `contracts/text-generation-v1.json`, and packs a reproducible `.tar.xz` and an
+  architecture-independent `.deb`. `build.sh` dispatches on `model.json`'s `kind`. The first model
+  is `smollm2_135m_instruct` (int4, CPU). `onnx-ir` joins the export lock, with `sympy` pinned to
+  the image's version.
 - Accept the Llama and Gemma community licenses beside Apache-2.0, MIT and BSD (owner decision
   2026-10-30, ANTfrastructure `docs/language-ai.md`). `scripts/license_policy.py` is the rule; a
   community license must list its `license_obligations`. The metadata check moved from

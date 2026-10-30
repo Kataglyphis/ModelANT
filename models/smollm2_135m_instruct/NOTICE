@@ -1,0 +1,13 @@
+smollm2_135m_instruct-cpu — SmolLM2-135M-Instruct for ONNX Runtime GenAI, built by ModelANT
+https://github.com/Kataglyphis/ModelANT
+
+Licensed under the Apache License, Version 2.0 (smollm2_135m_instruct.LICENSE).
+
+The weights are Hugging Face's published SmolLM2-135M-Instruct:
+  https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct, revision 12fd25f77366fa6b3b4b768ec3050bf629380bac
+  published by Hugging Face (HuggingFaceTB) under the Apache License 2.0; the model card names its
+  authors and its training data.
+
+Changes made by ModelANT: onnxruntime_genai.models.builder exports the model to ONNX for the CPU
+execution provider and quantizes its weights to int4, and re-saves the tokenizer and its chat
+template through transformers for GenAI. See scripts/export_genai.py in ModelANT.

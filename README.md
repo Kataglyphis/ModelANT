@@ -5,7 +5,7 @@
 
   <h1>ModelANT</h1>
 
-  <h4>Permissively licensed ML models for the Kataglyphis projects, built from pinned upstream sources and published as releases.</h4>
+  <h4>ML models for the Kataglyphis projects, built from pinned upstream sources and published as releases.</h4>
 </div>
 
 [![Check](https://github.com/Kataglyphis/ModelANT/actions/workflows/check.yml/badge.svg)](https://github.com/Kataglyphis/ModelANT/actions/workflows/check.yml)
@@ -16,11 +16,11 @@
 The Kataglyphis family's machine-learning models, kept apart from the code that runs them. Each
 model is built here from its pinned upstream source and published as a GitHub release; the code
 repositories (OmniAccelerANT, OxidANT, AccelerANTgine, OrchestrANT) fetch it by URL and check its
-SHA-256, so no model file sits in their git history. Only permissively licensed models live here.
+SHA-256, so no model file sits in their git history. Every model's license and its obligations are on record.
 
 ## Highlights
 
-- **Permissive only**: code and weights under Apache-2.0, MIT or BSD, and training data that allows it.
+- **Licenses on record**: Apache-2.0, MIT or BSD, or the Llama and Gemma licenses with their obligations ([docs/models.md](docs/models.md#adding-a-model)).
 - **Built from a pinned upstream**: `model.json` pins the repository, commit, config and checkpoint SHA-256.
 - **Built and checked in the family's image**: its pinned CPython, torch and chain-built ONNX Runtime, never PyPI's.
 - **One release per model version**, tag `<name>-v<N>`, with the ONNX, its `LICENSE` and `NOTICE`, a license-checked contract archive, and `SHA256SUMS`.

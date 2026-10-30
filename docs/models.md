@@ -124,7 +124,16 @@ real arrival pictures of three cameras, on a Pi 5 at the cameras' 0.25 threshold
 ## Adding a model
 
 A model belongs here when its code **and** its weights are under a permissive license (Apache-2.0,
-MIT, BSD) and its training data allows it. Ultralytics' YOLO models (AGPL-3.0) do not qualify.
+MIT, BSD-2-Clause, BSD-3-Clause) and its training data allows it, or under one of the two community
+licenses the owner approved on 2026-10-30: `LicenseRef-Llama-Community` and `LicenseRef-Gemma`.
+Ultralytics' YOLO models (AGPL-3.0) do not qualify.
+
+A community license adds `license_obligations` to `model.json`: what every release and consumer
+must do, such as shipping the agreement and its use policy, or displaying "Built with Llama".
+`models/<name>/LICENSE` holds the agreement itself. The release notes still state Apache-2.0 for
+every model until `release.yml` reads the license from `model.json`. Multimodal Llama
+models exclude users resident in the EU, so none is added. `scripts/license_policy.py` is the rule;
+`check.sh` fails a model outside it.
 
 1. `models/<name>/model.json` pins the upstream repository, commit, config and checkpoint
    (SHA-256); `models/<name>/LICENSE` is the upstream license and `models/<name>/NOTICE` names

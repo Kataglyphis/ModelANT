@@ -14,5 +14,29 @@
     "replace": "true \\",
     "test": "bash scripts/tests/test-contract-package.sh",
     "why": "An archive missing a declared text must not replace a valid prior artifact."
+  },
+  {
+    "id": "license.unlisted-refused",
+    "target": "scripts/license_policy.py",
+    "find": "    if license_id not in COMMUNITY:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_license_policy.py",
+    "why": "A license outside the policy must be refused by name, not judged as a community license."
+  },
+  {
+    "id": "license.obligations-required",
+    "target": "scripts/license_policy.py",
+    "find": "    if not obligations:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_license_policy.py",
+    "why": "A Llama or Gemma model without recorded obligations would ship without the notices its license demands."
+  },
+  {
+    "id": "license.metadata-applies-policy",
+    "target": "scripts/model_metadata.py",
+    "find": "    bad += license_problems(d.name, spec)",
+    "replace": "    pass",
+    "test": "python3 -I scripts/tests/test_model_metadata.py",
+    "why": "check.sh reaches the license rule only through the metadata check; dropping the call passes any license."
   }
 ]

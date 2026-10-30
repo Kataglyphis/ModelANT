@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Accept the Llama and Gemma community licenses beside Apache-2.0, MIT and BSD (owner decision
+  2026-10-30, ANTfrastructure `docs/language-ai.md`). `scripts/license_policy.py` is the rule; a
+  community license must list its `license_obligations`. The metadata check moved from
+  `check.sh`'s heredoc into `scripts/model_metadata.py`, unchanged otherwise, so both are
+  unit-tested and mutation-proven.
 - Include and verify the project license and notice alongside the fixture notices in contract archives.
 - Lock export dependencies with uv and validate their image-provided dependencies before installing a fresh overlay.
 - Search this repository and its direct submodules before adding Bash or PowerShell code.

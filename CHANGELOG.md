@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The release workflow checks out the ANTfrastructure submodule, which `build.sh` has sourced since
+  the shared overlay; a tag push failed before building anything. Its notes print each model's
+  license and obligations from `model.json` instead of stating Apache-2.0 for every model.
 - Build text-generation models for ONNX Runtime GenAI: `scripts/export_genai.py` fetches the pinned
   Hugging Face files through the hub's lock fetcher, exports them with the image's chain GenAI
   builder, checks `contracts/text-generation-v1.json`, and packs a reproducible `.tar.xz` and an

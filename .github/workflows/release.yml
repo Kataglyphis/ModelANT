@@ -25,7 +25,8 @@ jobs:
         uses: Kataglyphis/ANTfrastructure/.github/actions/prepare-linux-ci-host@develop
         with:
           fetch-depth: '1'
-          submodules: 'false'
+          # build.sh sources the hub's overlay and fetcher from the submodule.
+          submodules: 'true'
 
       - name: Model name
         id: model
@@ -56,9 +57,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MODEL_NAME: ${{ steps.model.outputs.name }}
         run: |
-          summary="$(jq -r .summary "models/${MODEL_NAME}/model.json")"
+          spec="models/${MODEL_NAME}/model.json"
+          summary="$(jq -r .summary "${spec}")"
+          license="$(jq -r .license "${spec}")"
+          obligations="$(jq -r '(.license_obligations // [])[] | "- " + .' "${spec}")"
           {
-            printf '%s\n\nLicense: Apache-2.0 (see %s.LICENSE and %s.NOTICE).\n\n' "${summary}" "${MODEL_NAME}" "${MODEL_NAME}"
+            printf '%s\n\nLicense: %s (see %s.LICENSE and %s.NOTICE).\n\n' "${summary}" "${license}" "${MODEL_NAME}" "${MODEL_NAME}"
+            if [ -n "${obligations}" ]; then printf 'Obligations when redistributing:\n%s\n\n' "${obligations}"; fi
             printf 'SHA-256:\n```\n'; cat dist/SHA256SUMS; printf '```\n'
           } > notes.md
           gh release create "${GITHUB_REF_NAME}" dist/* --title "${GITHUB_REF_NAME}" --notes-file notes.md

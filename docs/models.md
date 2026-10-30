@@ -156,8 +156,8 @@ Ultralytics' YOLO models (AGPL-3.0) do not qualify.
 
 A community license adds `license_obligations` to `model.json`: what every release and consumer
 must do, such as shipping the agreement and its use policy, or displaying "Built with Llama".
-`models/<name>/LICENSE` holds the agreement itself. The release notes still state Apache-2.0 for
-every model until `release.yml` reads the license from `model.json`. Multimodal Llama
+`models/<name>/LICENSE` holds the agreement itself, and the release notes print the license and
+every obligation from `model.json`. Multimodal Llama
 models exclude users resident in the EU, so none is added. `scripts/license_policy.py` is the rule;
 `check.sh` fails a model outside it.
 

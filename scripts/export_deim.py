@@ -12,6 +12,7 @@ import torch.nn as nn
 
 from inference_contract import validate_outputs
 from compare import prepare
+from onnx_compat import expand_vector_matmuls, vector_matmuls
 
 
 def main():
@@ -72,6 +73,9 @@ def main():
     for key, value in meta["onnx"]["metadata"].items():
         proto.metadata_props.append(onnx.StringStringEntryProto(key=key, value=value))
     proto.metadata_props.append(onnx.StringStringEntryProto(key="kataglyphis.model", value=meta["name"]))
+    print(f"expanded {expand_vector_matmuls(proto)} MatMul node(s) for DirectML")
+    if vector_matmuls(proto):
+        sys.exit("a MatMul by a 1-D vector survived; DirectML computes it wrongly")
     onnx.checker.check_model(proto)
     onnx.save(proto, a.out)
 

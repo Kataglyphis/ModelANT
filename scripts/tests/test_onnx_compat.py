@@ -49,6 +49,22 @@ class ExpandVectorMatmuls(unittest.TestCase):
         self.assertEqual(after.shape, before.shape)
         np.testing.assert_allclose(after, before, atol=1e-6)
 
+    def test_only_the_vector_matmul_changes_among_many_nodes(self):
+        model = graph_model(1)
+        for index in range(200):
+            source = "y" if index == 0 else f"tail{index - 1}"
+            model.graph.node.append(helper.make_node("Identity", [source], [f"tail{index}"]))
+        model.graph.output[0].name = "tail199"
+        x = np.random.default_rng(1).normal(size=(3, 4)).astype(np.float32)
+        before = run(model, x)
+
+        self.assertEqual(expand_vector_matmuls(model), 1)
+
+        np.testing.assert_allclose(run(model, x), before, atol=1e-6)
+        counts = [node.op_type for node in model.graph.node]
+        self.assertEqual(counts.count("Identity"), 200)
+        self.assertEqual((counts.count("Unsqueeze"), counts.count("Squeeze")), (1, 1))
+
     def test_a_matrix_product_is_left_alone(self):
         model = graph_model(2)
         self.assertEqual(expand_vector_matmuls(model), 0)

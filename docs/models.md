@@ -104,12 +104,13 @@ export and regression suite. A general dependency bump cannot validate a replace
 
 The image runs as uid 1001, which must be able to write `dist/`. Measured 2026-10-20 in `:latest`
 (Python 3.14.4, torch 2.14.1+cpu, ONNX Runtime 1.30.0): 58 s, and all five files match
-`deim_dfine_n_coco-v1`'s `SHA256SUMS` byte for byte.
+`deim_dfine_n_coco-v1`'s `SHA256SUMS` byte for byte. That was before the export wrote the box
+integral for DirectML; v1 returns no detection on AMD GPUs, so new consumers pin v2.
 
 ## Releasing
 
 ```bash
-git tag deim_dfine_n_coco-v1 && git push origin deim_dfine_n_coco-v1   # CI builds it in the image and publishes it
+git tag deim_dfine_n_coco-v2 && git push origin deim_dfine_n_coco-v2   # CI builds it in the image and publishes it
 gh workflow run release.yml --ref develop -f model=deim_dfine_n_coco   # the same build as an artifact, no release
 ```
 

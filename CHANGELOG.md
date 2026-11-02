@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- `export_deim.py` writes D-FINE's box integral as a matrix product of a column (`scripts/onnx_compat.py`). DirectML computes MatMul by a 1-D vector wrongly: on AMD GPUs `deim_dfine_n_coco-v1` returned no detection on the two-cat photo, with every operator on the GPU. CPU results change by under 0.001 pixels.
+- `export_deim.py` writes D-FINE's box integral as a matrix product of a column (`scripts/onnx_compat.py`). DirectML computes MatMul by a 1-D vector wrongly: on AMD GPUs `deim_dfine_n_coco-v1` returned no detection on the two-cat photo, with every operator on the GPU. CPU results change by under 0.001 pixels. Released as `deim_dfine_n_coco-v2`; the two-cat photo gives the same five detections on the CPU and on a Radeon RX 9070 XT.
 - The release workflow checks out the ANTfrastructure submodule, which `build.sh` has sourced since
   the shared overlay; a tag push failed before building anything. Its notes print each model's
   license and obligations from `model.json` instead of stating Apache-2.0 for every model.

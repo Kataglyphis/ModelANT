@@ -63,6 +63,7 @@ build_detection() {
   fi
   [ -s "${ckpt}" ] || gdown -q "${drive_id}" -O "${ckpt}"
   printf '%s  %s\n' "${ckpt_sha}" "${ckpt}" | sha256sum -c --quiet - || { printf 'checkpoint %s does not match its sha256\n' "${ckpt}" >&2; exit 1; }
+  python3 "${root}/scripts/tests/test_onnx_compat.py"
   (cd "${src}" && python3 "${root}/scripts/export_deim.py" --deim "${src}" --config "${config}" \
     --checkpoint "${ckpt}" --model-json "${spec}" --out "${out}/${file}")
   cp "${ckpt}" "${out}/${ckpt_file}"

@@ -3,9 +3,14 @@ import sys
 import unittest
 
 import numpy as np
-import onnx
 import onnxruntime as ort
-from onnx import TensorProto, helper, numpy_helper
+
+# onnx comes with the export overlay, not the image: build.sh runs this suite, check.sh skips it.
+try:
+    import onnx
+    from onnx import TensorProto, helper, numpy_helper
+except ImportError as error:
+    raise unittest.SkipTest(f"no onnx: {error}") from error
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 

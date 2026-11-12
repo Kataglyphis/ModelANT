@@ -10,11 +10,11 @@ dependencies = [
     "calflops==0.3.2",
     "transformers==5.20.2",
     "gdown==6.4.2",
-    "certifi==2026.10.19",
-    "filelock==4.1.1",
+    "certifi==2026.10.23",
+    "filelock==4.2.4",
     "protobuf==6.33.6",
-    "setuptools==84.0.0",
-    "soupsieve==3.0.3",
+    "setuptools==84.2.1",
+    "soupsieve==3.0.4",
     "sympy==1.14.0",
 ]
 

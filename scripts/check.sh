@@ -12,10 +12,12 @@ python="${PREFLIGHT_PYTHON}"
 printf 'python: %s\n' "$("${python}" --version)"
 
 "${python}" -I scripts/model_metadata.py models
+"${python}" -I scripts/decode_contract.py contracts/inference-v1.json models
 
 # compile(), not py_compile: nothing is written into the checkout.
 "${python}" -I -c 'import sys; [compile(open(f, encoding="utf-8").read(), f, "exec") for f in sys.argv[1:]]' \
-  scripts/export_deim.py scripts/onnx_compat.py scripts/compare.py scripts/license_policy.py scripts/model_metadata.py scripts/export_genai.py
+  scripts/export_deim.py scripts/onnx_compat.py scripts/compare.py scripts/license_policy.py scripts/model_metadata.py scripts/export_genai.py \
+  scripts/decode_contract.py
 "${python}" -I -m unittest discover -s scripts/tests -p 'test_*.py'
 bash scripts/tests/test-overlay-cleanup.sh
 bash scripts/tests/check-image-lock.sh

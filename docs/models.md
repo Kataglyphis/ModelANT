@@ -15,11 +15,13 @@ with its SHA-256; `models/<name>/LICENSE` is the upstream license. The ONNX:
 | input | `images` | `[1, 3, 640, 640]` | RGB, 0..1 |
 | output | `output0` | `[1, 300, 6]` | x1, y1, x2, y2 in the input's pixels, the score, and the class as a 0..79 COCO index |
 
-Its metadata names the preprocessing (`kataglyphis.preprocess`: `stretch` or `letterbox`), so a
-consumer needs no setting.
+Its metadata names the preprocessing (`kataglyphis.preprocess`: `stretch` or `letterbox`) and the
+output's layout (`kataglyphis.output`: `xyxy_score_class`), so a consumer needs no setting.
 
 The shared [inference contract](../contracts/README.md) provides portable frame-to-tensor
 cases for Python, Rust and C++ tests, including padded frames and rounded letterbox dimensions.
+It also lists both metadata keys with their allowed values and fixes, with row-to-detection
+cases, how a detector decodes the output; `check.sh` fails a `model.json` that names another value.
 
 On the Raspberry Pi 5 (2 threads, ONNX Runtime CPU), measured 2026-10-14 against YOLO26n on 12
 arrival pictures of three real cat cameras: about 260 ms a run against 190 ms, and a cat found
@@ -165,8 +167,8 @@ models exclude users resident in the EU, so none is added. `scripts/license_poli
 1. `models/<name>/model.json` pins the upstream repository, commit, config and checkpoint
    (SHA-256); `models/<name>/LICENSE` is the upstream license and `models/<name>/NOTICE` names
    its authors and what the export changed.
-2. An export script writes the `[1, 300, 6]` layout and names the preprocessing in the metadata
-   (`scripts/export_deim.py` is the DEIM one).
+2. An export script writes the `[1, 300, 6]` layout and names the preprocessing and the layout in
+   the metadata (`scripts/export_deim.py` is the DEIM one).
 3. Compare it (above), then tag `<name>-v1`; the consumers move their lock files to the release's
    SHA-256.
 4. Add it to the README's table of models.

@@ -24,7 +24,7 @@ SHA-256, so no model file sits in their git history. Every model's license and i
 - **Built from a pinned upstream**: `model.json` pins the repository, commit, config and checkpoint SHA-256.
 - **Built and checked in the family's image**: its pinned CPython, torch and chain-built ONNX Runtime, never PyPI's.
 - **One release per model version**, tag `<name>-v<N>`, with the ONNX, its `LICENSE` and `NOTICE`, a license-checked contract archive, and `SHA256SUMS`.
-- **One output layout**: `[1, 300, 6]` boxes, score and COCO class; the ONNX metadata names the preprocessing.
+- **One output layout**: `[1, 300, 6]` boxes, score and COCO class; the ONNX metadata names it and the preprocessing.
 - **Compared on real camera pictures** before a model replaces another (`scripts/compare.py`).
 
 ## The models
@@ -68,7 +68,7 @@ Torch and ONNX Runtime are checked and retained during installation.
 | Building a model in the image | [docs/models.md](docs/models.md#building) |
 | Releasing a model | [docs/models.md](docs/models.md#releasing) |
 | Comparing a candidate, and smaller input sizes | [docs/models.md](docs/models.md#comparing-a-candidate) |
-| Shared inference tensors and model validation | [contracts/README.md](contracts/README.md) |
+| Shared inference tensors, decode rules and model validation | [contracts/README.md](contracts/README.md) |
 | Adding a model | [docs/models.md](docs/models.md#adding-a-model) |
 | Why models live outside the code, and how consumers fetch them | [ANTfrastructure: `data-repositories.md`](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md) |
 | CI quality reports, strict duplication checks, Ruff/ty and refactor previews | [Shared quality tooling](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/code-quality-tooling.md) |

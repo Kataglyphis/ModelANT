@@ -254,5 +254,189 @@
         "scale_y": 1.5
       }
     }
-  ]
+  ],
+  "onnx_metadata": {
+    "kataglyphis.preprocess": ["stretch", "letterbox"],
+    "kataglyphis.output": ["xyxy_score_class", "cxcywh_objectness_scores", "cxcywh_scores_by_anchor"]
+  },
+  "decode": {
+    "layout": "xyxy_score_class",
+    "rules": [
+      "1. A row is a detection only when its score is finite and at least score_threshold.",
+      "2. Its class must be a number with output.class_range[0] <= class < output.class_range[1] + 1; the class id is that number cut toward zero.",
+      "3. Its four corners must be finite, with x2 >= x1 and y2 >= y1; a point stays.",
+      "4. No overlap suppression: every row that passes rules 1 to 3 is a detection, whatever it overlaps.",
+      "5. Each corner maps to the frame as (x - pad_x) / scale_x and (y - pad_y) / scale_y; then x is cut to [0, width] and y to [0, height]."
+    ],
+    "non_finite": ["NaN", "Infinity", "-Infinity"],
+    "order": "row",
+    "score_tolerance": 0.000001,
+    "coordinate_tolerance": 0.01,
+    "cases": [
+      {
+        "name": "stretch_rows_keep_row_order",
+        "rule": 5,
+        "width": 1280, "height": 1024, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 0.5, "scale_y": 0.625},
+        "score_threshold": 0.25,
+        "rows": [
+          [20, 50, 120, 300, 0.3, 0],
+          [100, 200, 300, 400, 0.9, 15]
+        ],
+        "expected": [
+          {"row": 0, "class": 0, "score": 0.3, "box": [40, 80, 240, 480]},
+          {"row": 1, "class": 15, "score": 0.9, "box": [200, 320, 600, 640]}
+        ]
+      },
+      {
+        "name": "score_finite_and_at_threshold",
+        "rule": 1,
+        "width": 1280, "height": 1024, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 0.5, "scale_y": 0.625},
+        "score_threshold": 0.5,
+        "rows": [
+          [10, 10, 60, 60, "NaN", 15],
+          [70, 10, 120, 60, "Infinity", 15],
+          [130, 10, 180, 60, "-Infinity", 15],
+          [190, 10, 240, 60, 0.49999997, 15],
+          [250, 10, 300, 60, 0.5, 15],
+          [310, 10, 360, 60, 0.75, 15]
+        ],
+        "expected": [
+          {"row": 4, "class": 15, "score": 0.5, "box": [500, 16, 600, 96]},
+          {"row": 5, "class": 15, "score": 0.75, "box": [620, 16, 720, 96]}
+        ]
+      },
+      {
+        "name": "class_in_range_cut_to_integer",
+        "rule": 2,
+        "width": 1280, "height": 1024, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 0.5, "scale_y": 0.625},
+        "score_threshold": 0.5,
+        "rows": [
+          [10, 10, 60, 60, 0.9, 80],
+          [70, 10, 120, 60, 0.9, -1],
+          [130, 10, 180, 60, 0.9, -0.5],
+          [190, 10, 240, 60, 0.9, "NaN"],
+          [250, 10, 300, 60, 0.9, "Infinity"],
+          [310, 10, 360, 60, 0.9, 15.9],
+          [370, 10, 420, 60, 0.9, 79.5],
+          [430, 10, 480, 60, 0.9, 0]
+        ],
+        "expected": [
+          {"row": 5, "class": 15, "score": 0.9, "box": [620, 16, 720, 96]},
+          {"row": 6, "class": 79, "score": 0.9, "box": [740, 16, 840, 96]},
+          {"row": 7, "class": 0, "score": 0.9, "box": [860, 16, 960, 96]}
+        ]
+      },
+      {
+        "name": "corners_finite_and_ordered",
+        "rule": 3,
+        "width": 1280, "height": 1024, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 0.5, "scale_y": 0.625},
+        "score_threshold": 0.5,
+        "rows": [
+          ["NaN", 10, 60, 60, 0.9, 15],
+          [70, 10, "Infinity", 60, 0.9, 15],
+          [130, "-Infinity", 180, 60, 0.9, 15],
+          [190, 10, 240, "NaN", 0.9, 15],
+          [300, 10, 250, 60, 0.9, 15],
+          [310, 60, 360, 10, 0.9, 15],
+          [400, 40, 400, 40, 0.9, 15],
+          [430, 10, 480, 60, 0.9, 15]
+        ],
+        "expected": [
+          {"row": 6, "class": 15, "score": 0.9, "box": [800, 64, 800, 64]},
+          {"row": 7, "class": 15, "score": 0.9, "box": [860, 16, 960, 96]}
+        ]
+      },
+      {
+        "name": "overlapping_boxes_all_stay",
+        "rule": 4,
+        "width": 1280, "height": 1024, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 0.5, "scale_y": 0.625},
+        "score_threshold": 0.5,
+        "rows": [
+          [100, 200, 300, 400, 0.9, 15],
+          [172, 200, 372, 400, 0.6, 15],
+          [100, 200, 300, 400, 0.55, 15],
+          [100, 200, 300, 400, 0.52, 57]
+        ],
+        "expected": [
+          {"row": 0, "class": 15, "score": 0.9, "box": [200, 320, 600, 640]},
+          {"row": 1, "class": 15, "score": 0.6, "box": [344, 320, 744, 640]},
+          {"row": 2, "class": 15, "score": 0.55, "box": [200, 320, 600, 640]},
+          {"row": 3, "class": 57, "score": 0.52, "box": [200, 320, 600, 640]}
+        ]
+      },
+      {
+        "name": "box_cut_at_each_frame_edge",
+        "rule": 5,
+        "width": 1280, "height": 1024, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 0.5, "scale_y": 0.625},
+        "score_threshold": 0.5,
+        "rows": [
+          [-10, 100, 50, 200, 0.9, 15],
+          [100, -5, 200, 50, 0.9, 15],
+          [600, 100, 650, 200, 0.9, 15],
+          [100, 600, 200, 645, 0.9, 15],
+          [-10, -5, 650, 645, 0.9, 0]
+        ],
+        "expected": [
+          {"row": 0, "class": 15, "score": 0.9, "box": [0, 160, 100, 320]},
+          {"row": 1, "class": 15, "score": 0.9, "box": [200, 0, 400, 80]},
+          {"row": 2, "class": 15, "score": 0.9, "box": [1200, 160, 1280, 320]},
+          {"row": 3, "class": 15, "score": 0.9, "box": [200, 960, 400, 1024]},
+          {"row": 4, "class": 0, "score": 0.9, "box": [0, 0, 1280, 1024]}
+        ]
+      },
+      {
+        "name": "letterbox_top_padding",
+        "rule": 5,
+        "width": 1280, "height": 720, "input_width": 640, "input_height": 640, "mode": "letterbox",
+        "mapping": {"content_width": 640, "content_height": 360, "pad_x": 0, "pad_y": 140, "scale_x": 0.5, "scale_y": 0.5},
+        "score_threshold": 0.5,
+        "rows": [
+          [100, 200, 300, 400, 0.9, 15],
+          [0, 140, 640, 500, 0.8, 0]
+        ],
+        "expected": [
+          {"row": 0, "class": 15, "score": 0.9, "box": [200, 120, 600, 520]},
+          {"row": 1, "class": 0, "score": 0.8, "box": [0, 0, 1280, 720]}
+        ]
+      },
+      {
+        "name": "letterbox_left_padding",
+        "rule": 5,
+        "width": 720, "height": 1280, "input_width": 640, "input_height": 640, "mode": "letterbox",
+        "mapping": {"content_width": 360, "content_height": 640, "pad_x": 140, "pad_y": 0, "scale_x": 0.5, "scale_y": 0.5},
+        "score_threshold": 0.5,
+        "rows": [
+          [240, 100, 440, 300, 0.9, 15],
+          [140, 0, 500, 640, 0.8, 0]
+        ],
+        "expected": [
+          {"row": 0, "class": 15, "score": 0.9, "box": [200, 200, 600, 600]},
+          {"row": 1, "class": 0, "score": 0.8, "box": [0, 0, 720, 1280]}
+        ]
+      },
+      {
+        "name": "letterbox_box_in_padding_cut",
+        "rule": 5,
+        "width": 1280, "height": 720, "input_width": 640, "input_height": 640, "mode": "letterbox",
+        "mapping": {"content_width": 640, "content_height": 360, "pad_x": 0, "pad_y": 140, "scale_x": 0.5, "scale_y": 0.5},
+        "score_threshold": 0.5,
+        "rows": [
+          [0, 100, 640, 320, 0.9, 15],
+          [320, 400, 480, 560, 0.8, 15],
+          [-10, 0, 650, 640, 0.7, 0]
+        ],
+        "expected": [
+          {"row": 0, "class": 15, "score": 0.9, "box": [0, 0, 1280, 360]},
+          {"row": 1, "class": 15, "score": 0.8, "box": [640, 520, 960, 720]},
+          {"row": 2, "class": 0, "score": 0.7, "box": [0, 0, 1280, 720]}
+        ]
+      }
+    ]
+  }
 }

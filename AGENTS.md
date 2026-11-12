@@ -16,7 +16,9 @@ The export environment uses `pyproject.toml` and `uv.lock`; image packages and m
 must satisfy the shared overlay check before installation, and the ORT census runs on both sides.
 
 `contracts/inference-v1.json` is shared with native consumer tests. Change its version when
-changing existing cases or their semantics. New cases may be appended. The exporter must
+changing existing cases or their semantics. New cases may be appended. A decode case is published
+with its digest in `scripts/decode_contract.py`: changing one fails `check.sh` and needs a new schema
+version. The exporter must
 check a real positive fixture, a blank frame, finite outputs, exact confident classes and
 separate confidence/coordinate tolerances. A release includes the deterministic contract
 archive and its licences in `SHA256SUMS`.

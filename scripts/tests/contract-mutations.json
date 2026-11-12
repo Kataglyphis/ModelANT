@@ -78,5 +78,373 @@
     "replace": "    pass",
     "test": "python3 -I scripts/tests/test_export_genai.py",
     "why": "The model package must carry the license and notice that the model's license obliges every redistribution to ship."
+  },
+  {
+    "id": "decode.rule1-score-reaches-threshold",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not _number(entry[\"score\"]) or entry[\"score\"] < threshold:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Rule 1: an expected detection under the threshold, or with a score that is no number, would teach three decoders to keep it."
+  },
+  {
+    "id": "decode.rule2-class-in-range",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not _count(entry[\"class\"]) or not class_range[0] <= entry[\"class\"] <= class_range[1]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Rule 2: an expected class 80 or -1 has no name in any detector and must not reach a consumer as the reference."
+  },
+  {
+    "id": "decode.rule2-class-cut-from-row",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not _number(row[5]) or math.trunc(row[5]) != entry[\"class\"]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Rule 2: the class id is the row's number cut to an integer; a rounded 15.9 would be recorded as class 16."
+  },
+  {
+    "id": "decode.rule3-row-corners-finite-ordered",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not all(map(_number, row[:4])) or row[2] < row[0] or row[3] < row[1]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Rule 3: a row with a NaN corner or with x2 before x1 is no detection, so no expected detection may name it."
+  },
+  {
+    "id": "decode.rule3-box-ordered",
+    "target": "scripts/decode_contract.py",
+    "find": "    if box[2] < box[0] or box[3] < box[1]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Rule 3: an expected box whose corners are out of order cannot come from a kept row."
+  },
+  {
+    "id": "decode.rule4-every-row-kept",
+    "target": "scripts/decode_contract.py",
+    "find": "    if len(kept) != len(case[\"rows\"]):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Rule 4: a suppression case that drops a row would pass the detector that merged the two cats."
+  },
+  {
+    "id": "decode.rule4-pair-over-suppression-iou",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not any(_iou(a[\"box\"], b[\"box\"]) > SUPPRESSION_IOU for a, b in pairs):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Rule 4: without a same-class pair above IoU 0.45 the case passes a detector that still suppresses at 0.45."
+  },
+  {
+    "id": "decode.rule5-box-inside-frame",
+    "target": "scripts/decode_contract.py",
+    "find": "    if min(box) < 0 or max(box[0], box[2]) > case[\"width\"] or max(box[1], box[3]) > case[\"height\"]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Rule 5: an expected box past the frame edge would undo the cut the owner decided for all three detectors."
+  },
+  {
+    "id": "decode.detections-in-row-order",
+    "target": "scripts/decode_contract.py",
+    "find": "        if row <= last:",
+    "replace": "        if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Consumers compare the lists in order; an expected list out of row order fails every decoder that is right."
+  },
+  {
+    "id": "decode.score-is-the-rows",
+    "target": "scripts/decode_contract.py",
+    "find": "    if entry[\"score\"] != row[4]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A mistyped expected score fails every consumer; it must fail here first."
+  },
+  {
+    "id": "decode.box-in-whole-pixels",
+    "target": "scripts/decode_contract.py",
+    "find": " or not all(_number(v) and v == math.trunc(v) for v in box):",
+    "replace": " or not all(_number(v) for v in box):",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "OrchestrANT cuts coordinates to integers; a fractional expected box could only be met by the float decoders."
+  },
+  {
+    "id": "decode.row-values-portable",
+    "target": "scripts/decode_contract.py",
+    "find": "        elif not all(_number(value) or value in NON_FINITE for value in row):",
+    "replace": "        elif False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A row value outside the three spellings is read differently, or not at all, by the three languages' parsers."
+  },
+  {
+    "id": "decode.strict-json",
+    "target": "scripts/decode_contract.py",
+    "find": "    return json.loads(path.read_text(encoding=\"utf-8\"), parse_constant=refuse)",
+    "replace": "    return json.loads(path.read_text(encoding=\"utf-8\"))",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Python accepts a bare NaN; serde_json and nlohmann do not, so the Rust and C++ tests could not open the file."
+  },
+  {
+    "id": "decode.mapping-scale-matches-frame",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not all(math.isclose(scale * side, size) for scale, side, size in zip(scales, frame, content)):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A mapping that no preprocessing returns makes the expected boxes fit no frame."
+  },
+  {
+    "id": "decode.every-rule-has-a-case",
+    "target": "scripts/decode_contract.py",
+    "find": "    bad += [f\"rule {rule} has no decode case\" for rule in RULES if all(case[\"rule\"] != rule for case in cases)]",
+    "replace": "    pass",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A rule without a case holds no detector to it."
+  },
+  {
+    "id": "decode.published-case-missing",
+    "target": "scripts/decode_contract.py",
+    "find": "    bad = [f\"decode case {name} is missing: a published case stays\" for name in PUBLISHED if name not in found]",
+    "replace": "    bad = []",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A deleted case silently removes a rule from three consumers' tests at their next pin."
+  },
+  {
+    "id": "decode.published-case-changed",
+    "target": "scripts/decode_contract.py",
+    "find": "        elif digest != PUBLISHED[name]:",
+    "replace": "        elif False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A published case changes only with schema_version (AGENTS.md); an edited row must not pass as the same case."
+  },
+  {
+    "id": "decode.new-case-recorded",
+    "target": "scripts/decode_contract.py",
+    "find": "        if name not in PUBLISHED:",
+    "replace": "        if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Recording a new case's digest is the reviewed step that makes it a published case."
+  },
+  {
+    "id": "decode.check-fails-on-a-problem",
+    "target": "scripts/decode_contract.py",
+    "find": "    return 1 if bad else 0",
+    "replace": "    return 0",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "check.sh stops on the status alone; printed problems with status 0 would pass CI."
+  },
+  {
+    "id": "metadata.model-value-listed",
+    "target": "scripts/decode_contract.py",
+    "find": "                for key in METADATA_KEYS if written.get(key) not in listed[key]]",
+    "replace": "                for key in ()]",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A model.json naming a layout or preprocessing no consumer knows must fail before it is exported."
+  },
+  {
+    "id": "metadata.decode-layout-listed",
+    "target": "scripts/decode_contract.py",
+    "find": "    if LAYOUT not in listed[\"kataglyphis.output\"]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "The decode cases are for one kataglyphis.output value; the list must still allow it."
+  },
+  {
+    "id": "decode.section-fields-exact",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(decode, dict) or set(decode) != DECODE_KEYS:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A contract without the decode section, or without its order or a tolerance, gives a consumer nothing to compare by."
+  },
+  {
+    "id": "decode.cases-not-empty",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(cases, list) or not cases:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A decode section whose cases are gone must be named as that, not as five rules without a case."
+  },
+  {
+    "id": "decode.case-fields-exact",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(case, dict) or set(case) != CASE_KEYS:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A case that lacks a field, such as its mapping or its threshold, cannot be replayed by any consumer."
+  },
+  {
+    "id": "decode.case-has-a-name",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(case[\"name\"], str) or not case[\"name\"]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Consumers list the cases they replay by name; a nameless case can be neither listed nor reported."
+  },
+  {
+    "id": "decode.rule-is-one-of-five",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not _count(case[\"rule\"]) or case[\"rule\"] not in RULES:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A case filed under no rule escapes the check that every rule has a case."
+  },
+  {
+    "id": "decode.threshold-in-range",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not _number(case[\"score_threshold\"]) or not 0 < case[\"score_threshold\"] <= 1:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A threshold of 0 keeps every finite score, so the case would show nothing about rule 1."
+  },
+  {
+    "id": "decode.rows-not-empty",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(rows, list) or not rows:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A case without rows replays nothing and still counts as a case of its rule."
+  },
+  {
+    "id": "decode.row-has-six-values",
+    "target": "scripts/decode_contract.py",
+    "find": "        if not isinstance(row, list) or len(row) != 6:",
+    "replace": "        if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A row of five values has no class column; each consumer would read past its end in its own way."
+  },
+  {
+    "id": "decode.expected-is-a-list",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(expected, list):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Consumers compare two lists entry by entry; anything else under expected fails them all at the first read."
+  },
+  {
+    "id": "decode.expected-fields-exact",
+    "target": "scripts/decode_contract.py",
+    "find": "        if not isinstance(entry, dict) or set(entry) != EXPECTED_KEYS:",
+    "replace": "        if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "An expected detection without its class, score or box leaves that part of a decoder's answer uncompared."
+  },
+  {
+    "id": "decode.expected-row-exists",
+    "target": "scripts/decode_contract.py",
+    "find": "        if not _count(row) or row >= len(rows):",
+    "replace": "        if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Every rule check reads the row an expected detection names; a row that is none checks nothing."
+  },
+  {
+    "id": "decode.frame-sizes-and-mode",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not all(_count(size) and size for size in sizes) or case[\"mode\"] not in (\"stretch\", \"letterbox\"):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A mode other than stretch or letterbox names no preprocessing any consumer has."
+  },
+  {
+    "id": "decode.mapping-fields-exact",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(mapping, dict) or set(mapping) != MAPPING_KEYS:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A consumer fills its own mapping type from the six fields of the preprocessing cases; a seventh or a missing one breaks that."
+  },
+  {
+    "id": "decode.mapping-sizes-whole",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not all(map(_count, whole)) or 0 in whole[:2]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A negative padding or an empty content area is no result of any preprocessing."
+  },
+  {
+    "id": "decode.mapping-scales-positive",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not all(_number(mapping[key]) and mapping[key] > 0 for key in (\"scale_x\", \"scale_y\")):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Every decoder divides by the scale; a scale of zero must be named as that."
+  },
+  {
+    "id": "decode.mapping-content-fits-input",
+    "target": "scripts/decode_contract.py",
+    "find": "    if any(pad + size > limit for pad, size, limit in zip(pads, content, room)):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Padding plus content wider than the input is no letterbox, and boxes mapped through it fit no frame."
+  },
+  {
+    "id": "decode.stretch-has-no-padding",
+    "target": "scripts/decode_contract.py",
+    "find": "    if case[\"mode\"] == \"stretch\" and (pads != (0, 0) or content != room):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A letterbox mapping under the name stretch would be fed to a consumer's stretch path."
+  },
+  {
+    "id": "decode.layout-is-corner-rows",
+    "target": "scripts/decode_contract.py",
+    "find": "    if decode[\"layout\"] != LAYOUT:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "The rules and rows are for xyxy_score_class; under another name a consumer would hand them to a raw-head decoder."
+  },
+  {
+    "id": "decode.non-finite-spellings",
+    "target": "scripts/decode_contract.py",
+    "find": "    if decode[\"non_finite\"] != NON_FINITE:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "The three spellings are the ones the float parsers of Rust, C++ and Python all read."
+  },
+  {
+    "id": "decode.order-is-row",
+    "target": "scripts/decode_contract.py",
+    "find": "    if decode[\"order\"] != \"row\":",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "The expected lists are in row order; another stated order would fail every decoder that is right."
+  },
+  {
+    "id": "decode.tolerances-bounded",
+    "target": "scripts/decode_contract.py",
+    "find": "        if not _number(decode[key]) or not 0 < decode[key] < limit:",
+    "replace": "        if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A coordinate tolerance of a pixel, or a score tolerance of 0.01, would pass a decoder that is off by that much."
+  },
+  {
+    "id": "decode.five-rules-stated",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(rules, list) or [str(rule)[:3] for rule in rules] != [f\"{rule}. \" for rule in RULES]:",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "The contract states the five rules in words; a dropped rule leaves its cases unexplained."
+  },
+  {
+    "id": "decode.case-names-unique",
+    "target": "scripts/decode_contract.py",
+    "find": "    bad += [f\"case name {name} is used twice\" for name in sorted(set(names)) if names.count(name) > 1]",
+    "replace": "    pass",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Consumers pick cases by name; of two cases with one name a consumer replays one twice and the other never."
+  },
+  {
+    "id": "metadata.both-keys-listed",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(listed, dict) or any(key not in listed for key in METADATA_KEYS):",
+    "replace": "    if False:",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A contract that stops listing one of the two keys leaves model.json's value for it unchecked."
+  },
+  {
+    "id": "metadata.values-are-distinct-names",
+    "target": "scripts/decode_contract.py",
+    "find": "           for key, values in listed.items() if not _names(values)]",
+    "replace": "           for key, values in listed.items() if False]",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "An empty or repeated list of values is nothing a model.json can be checked against."
   }
 ]

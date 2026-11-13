@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `contracts/README.md` names the detectors' one default score threshold, 0.25 (owner decision
+  2026-11-13, hub BACKLOG CON235). The cases keep their own thresholds; no data changed.
 - `contracts/inference-v1.json` says how the output's rows are decoded, so the detectors of
   OxidANT, AccelerANTgine and OrchestrANT can replay one reference (hub BACKLOG CON234). `decode`
   holds the owner's five rules for rows of the layout `xyxy_score_class` (a finite score of at

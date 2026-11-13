@@ -25,7 +25,10 @@ not calls into a second implementation of their algorithm. Alpha is ignored, pad
    `(x - pad_x) / scale_x` and `(y - pad_y) / scale_y`, and then cut to the frame: x into
    `[0, width]`, y into `[0, height]`.
 
-The threshold is each case's `score_threshold`; the contract fixes no default.
+The threshold is each case's `score_threshold`; the cases fix no default. The detectors share
+one default when a caller names none: **0.25**, the value measured at the cameras (owner
+decision 2026-11-13, hub BACKLOG CON235). ObservANT, OxidANT's `KATAGLYPHIS_SCORE_THRESHOLD`,
+AccelerANTgine's `YoloConfig` and OrchestrANT's `yolo-monitor --conf` all start from it.
 
 | Case | Rule | Holds |
 | --- | --- | --- |

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `contracts/README.md` names, under rule 4, what fails when a detector suppresses overlapping rows anyway:
+  OrchestrANT's recipe `cv.contract-corner-rows-suppressed`, AccelerANTgine's weekly C++ recipe
+  `cxx.decode-corner-rows-suppressed`, and in OxidANT, which has no suppression code for the layout, the replayed
+  case `overlapping_boxes_all_stay` (hub BACKLOG CON234, its second point). No data changed.
 - `contracts/README.md` names the detectors' one default score threshold, 0.25 (owner decision
   2026-11-13, hub BACKLOG CON235). The cases keep their own thresholds; no data changed.
 - `contracts/inference-v1.json` says how the output's rows are decoded, so the detectors of

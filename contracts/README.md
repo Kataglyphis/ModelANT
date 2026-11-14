@@ -20,7 +20,10 @@ not calls into a second implementation of their algorithm. Alpha is ignored, pad
 3. Its four corners must be finite and in order: `x2 >= x1` and `y2 >= y1`. A row whose corners
    are equal, a point, stays.
 4. No overlap suppression. An end-to-end model's rows are one per object, so two boxes of one
-   class that overlap stay two.
+   class that overlap stay two. What fails when a detector suppresses them anyway: OrchestrANT's
+   recipe `cv.contract-corner-rows-suppressed`, AccelerANTgine's `cxx.decode-corner-rows-suppressed`
+   (its weekly C++ mutation lane), and in OxidANT, which has no suppression code for this layout to
+   switch on, the replayed case `overlapping_boxes_all_stay` itself.
 5. Each kept box is mapped back to the frame through the preprocessing mapping,
    `(x - pad_x) / scale_x` and `(y - pad_y) / scale_y`, and then cut to the frame: x into
    `[0, width]`, y into `[0, height]`.

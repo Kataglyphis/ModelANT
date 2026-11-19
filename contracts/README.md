@@ -81,7 +81,9 @@ lacks a key or names another value.
 ## Fixture and release
 
 `fixtures/two_cats.jpg` is the existing MIT-licensed OxidANT regression image. Its provenance
-and permission notice are in `fixtures/NOTICE` and `fixtures/LICENSE`. Export validation runs
+and permission notice are in `fixtures/NOTICE` and `fixtures/LICENSE`. `fixtures/two_cats.png` is
+its lossless decode, so a golden test hands the model the same pixels in every language rather than
+three JPEG decoders' output; `NOTICE` pins its SHA-256. Export validation runs
 the real image and a blank frame through both PyTorch and ONNX Runtime, comparing finite
 outputs, exact confident classes, confidence tolerances and box tolerances. The positive
 image must contain at least two cats; the blank image must contain no confident detection.

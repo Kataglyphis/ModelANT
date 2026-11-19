@@ -446,5 +446,13 @@
     "replace": "           for key, values in listed.items() if False]",
     "test": "python3 -I scripts/tests/test_decode_contract.py",
     "why": "An empty or repeated list of values is nothing a model.json can be checked against."
+  },
+  {
+    "id": "contract.lossless-fixture-digest",
+    "target": "contracts/fixtures/NOTICE",
+    "find": "SHA256 c6cd81c5125e0772096c6e2968353c758bb5ecb3b2dbf7ec2d1c522b57c75f0f",
+    "replace": "SHA256 c6cd81c5125e0772096c6e2968353c758bb5ecb3b2dbf7ec2d1c522b57c75f00",
+    "test": "python3 -I -m unittest discover -s scripts/tests -p test_lossless_fixture.py",
+    "why": "the detectors pin the PNG's bytes; a re-encode with another digest must fail here first"
   }
 ]

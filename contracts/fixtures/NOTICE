@@ -2,3 +2,8 @@ two_cats.jpg is copied without modification from Kataglyphis/OxidANT
 commit e4e6173af17d68c93eae098b89703cfa594493ac,
 crates/inference/tests/fixtures/two_cats.jpg, under the accompanying MIT License.
 SHA256 6d375ac20fadfd400b3033084f8b0581dcc145f7c14e3b24b97975e379c52999
+
+two_cats.png is the lossless RGB decode of two_cats.jpg by Pillow 11.1.0, written as PNG
+at compression level 9, so every detector reads the same pixels (ANTfrastructure CON234).
+It is a derivative of two_cats.jpg under the same MIT License.
+SHA256 c6cd81c5125e0772096c6e2968353c758bb5ecb3b2dbf7ec2d1c522b57c75f0f

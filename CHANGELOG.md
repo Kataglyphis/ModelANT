@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `contracts/fixtures/two_cats.png`: the lossless RGB decode of `two_cats.jpg` (480×659, Pillow 11.1.0, PNG level 9,
+  SHA-256 `c6cd81c5…` in `fixtures/NOTICE`), so the three detectors' golden tests can hand the model the same pixels
+  instead of three JPEG decoders' output (hub BACKLOG CON234, its first point). `large-files.allow` freezes it at
+  514 KiB; `test_lossless_fixture.py` holds the decode and the digest. The JPEG stays.
 - `contracts/README.md` names, under rule 4, what fails when a detector suppresses overlapping rows anyway:
   OrchestrANT's recipe `cv.contract-corner-rows-suppressed`, AccelerANTgine's weekly C++ recipe
   `cxx.decode-corner-rows-suppressed`, and in OxidANT, which has no suppression code for the layout, the replayed

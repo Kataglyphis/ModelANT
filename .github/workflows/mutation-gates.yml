@@ -11,3 +11,5 @@ jobs:
     with:
       manifest: scripts/tests/contract-mutations.json
       submodules: 'true'
+      # Recipes import numpy and Pillow, which the image's Python has and the runner's lacks, as in check.yml.
+      in-image: true

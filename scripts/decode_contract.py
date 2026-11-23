@@ -1,6 +1,9 @@
 # Copyright (c) 2026 Kataglyphis
 # SPDX-License-Identifier: Apache-2.0
-"""Check contracts/inference-v1.json's metadata keys and decode cases; expected boxes are data, never computed here."""
+"""Check contracts/inference-v1.json's metadata keys, decode cases, raw-head cases and digest cases.
+
+Expected boxes and digests are data, never computed here; the checks hold each case to its rules.
+"""
 import hashlib
 import json
 import math
@@ -16,6 +19,15 @@ CASE_KEYS = {"name", "rule", "width", "height", "input_width", "input_height", "
              "score_threshold", "rows", "expected"}
 MAPPING_KEYS = {"content_width", "content_height", "pad_x", "pad_y", "scale_x", "scale_y"}
 EXPECTED_KEYS = {"row", "class", "score", "box"}
+# The raw heads D6 keeps (hub CON288 (e)): the values before a candidate's class scores, by layout.
+RAW_LAYOUTS = {"cxcywh_objectness_scores": 5, "cxcywh_scores_by_anchor": 4}
+RAW_KEYS = {"layouts", "rules", "iou_threshold", "order", "score_tolerance", "coordinate_tolerance", "cases"}
+RAW_CASE_KEYS = {"name", "rule", "layout", "width", "height", "input_width", "input_height", "mode", "mapping",
+                 "score_threshold", "output", "expected"}
+RAW_EXPECTED_KEYS = {"candidate", "class", "score", "box"}
+DIGEST_KEYS = {"frame", "tensor", "cases"}
+DIGEST_CASE_KEYS = {"name", "pixel_format", "width", "height", "row_stride_bytes", "plane_offset_bytes",
+                    "input_width", "input_height", "mode", "mapping", "expected_sha256", "samples"}
 # The family's raw-head suppression merges boxes above this overlap; a kept pair must exceed it to prove none ran.
 SUPPRESSION_IOU = 0.45
 # A published case stays as it is under one schema_version (AGENTS.md); a new case records its digest here.
@@ -29,6 +41,22 @@ PUBLISHED = {
     "letterbox_top_padding": "24e86cf406b4e672c3a69c892dc5eb2b863796bf2cbdd8a638e74acdbc0a9bd7",
     "letterbox_left_padding": "6bf9b5226693d879f56567ea6b2b24ec6578f93f4ae4744079e649f7278fb95a",
     "letterbox_box_in_padding_cut": "ac9b0023364b588163d2511034ca03f652923ee1e6a83b06021c597ef9e9eefb",
+}
+# The raw-head and full-size digest cases of hub CON288 (e), published as the decode cases are.
+PUBLISHED_RAW = {
+    "objectness_times_the_best_class": "5a8622bdb61c45516c4481e2c434dc1281ee54286376569f9f2b6b8d452a5633",
+    "same_class_overlap_above_0_45_keeps_the_stronger": "f551bb6a06bf4e3944c9719176014a033168e123d35df3fccc6c22170b884524",
+    "same_class_overlap_at_most_0_45_stays": "97726463b618d3de0aa65e6475a6024ce5256ee71308b108aa236fd67cedb08a",
+    "different_classes_never_suppress": "ad1fa88636aa7f92f4cbe7e298b195d5ae36c797560695079a03f7c125d8fb81",
+    "equal_scores_keep_the_lower_candidate": "cc2d8671c0e9643ec450e8e52e3cf560a6792e872d38bc80614017144a60e773",
+    "anchor_columns_are_the_candidates": "898eb8eb5397e9458bafca3c2885f322c4d738a9beb553900fa6c7f748ceaa3e",
+    "suppression_in_model_input_pixels": "17aec9e17411dbe52a453c2e93638cd2b30c26fdb4d1acb2681e0602a5fb8f1d",
+}
+PUBLISHED_DIGEST = {
+    "full_size_stretch_2304x1296": "f1219a93b59397bb5450946f118ed251c312f42591edfdaa0461c097f557f193",
+    "full_size_letterbox_2304x1296": "31a19a0e6e35c50185f466e20373ebedabd4e1fa80f6c4167a66f72b3caacbdd",
+    "odd_width_rows_padded_to_4_bytes": "aba5d072bdd990f6e339e74c327aa03339472070efd3bb2bc621cb183e5c2cc3",
+    "rgba_with_a_plane_offset": "61958f621849e973340102f43a3e0338b926718f4d5701be69d51536dc437cd0",
 }
 
 
@@ -203,17 +231,23 @@ def overlap_problems(case: dict) -> list[str]:
     return bad
 
 
+def _rule_and_threshold_problems(case: dict) -> list[str]:
+    """Why a case's rule or score_threshold is no rule number or no usable threshold."""
+    bad = []
+    if not _count(case["rule"]) or case["rule"] not in RULES:
+        bad.append("rule must be 1, 2, 3, 4 or 5")
+    if not _number(case["score_threshold"]) or not 0 < case["score_threshold"] <= 1:
+        bad.append("score_threshold must be a number above 0 and at most 1")
+    return bad
+
+
 def case_problems(case, class_range: list) -> list[str]:
     """Why one decode case is malformed or does not show its rule; empty when it is sound."""
     if not isinstance(case, dict) or set(case) != CASE_KEYS:
         return [f"a decode case must hold exactly {', '.join(sorted(CASE_KEYS))}"]
     if not isinstance(case["name"], str) or not case["name"]:
         return ["a decode case needs a name"]
-    bad = mapping_problems(case) + rows_problems(case["rows"])
-    if not _count(case["rule"]) or case["rule"] not in RULES:
-        bad.append("rule must be 1, 2, 3, 4 or 5")
-    if not _number(case["score_threshold"]) or not 0 < case["score_threshold"] <= 1:
-        bad.append("score_threshold must be a number above 0 and at most 1")
+    bad = mapping_problems(case) + rows_problems(case["rows"]) + _rule_and_threshold_problems(case)
     bad = bad or expected_problems(case, class_range)
     bad = bad or overlap_problems(case)
     return [f"{case['name']}: {why}" for why in bad]
@@ -228,12 +262,18 @@ def _settings_problems(decode: dict) -> list[str]:
         bad.append(f"decode.non_finite must be {', '.join(NON_FINITE)}")
     if decode["order"] != "row":
         bad.append("decode.order must be row")
+    return bad + _tolerance_and_rules_problems(decode, "decode")
+
+
+def _tolerance_and_rules_problems(section: dict, label: str) -> list[str]:
+    """Why a decode section's tolerances or its five numbered rules do not fit."""
+    bad = []
     for key, limit in (("score_tolerance", 0.01), ("coordinate_tolerance", 0.5)):
-        if not _number(decode[key]) or not 0 < decode[key] < limit:
-            bad.append(f"decode.{key} must be a number above 0 and under {limit}")
-    rules = decode["rules"]
+        if not _number(section[key]) or not 0 < section[key] < limit:
+            bad.append(f"{label}.{key} must be a number above 0 and under {limit}")
+    rules = section["rules"]
     if not isinstance(rules, list) or [str(rule)[:3] for rule in rules] != [f"{rule}. " for rule in RULES]:
-        bad.append("decode.rules must be the five rules, each starting with its number")
+        bad.append(f"{label}.rules must be the five rules, each starting with its number")
     return bad
 
 
@@ -256,27 +296,197 @@ def decode_problems(spec: dict) -> list[str]:
     return bad
 
 
+def raw_candidates(case: dict) -> list[list]:
+    """One list per candidate: the output's rows, or its columns for cxcywh_scores_by_anchor."""
+    if case["layout"] == "cxcywh_scores_by_anchor":
+        return [list(column) for column in zip(*case["output"])]
+    return case["output"]
+
+
+def raw_scores(case: dict) -> list[tuple[int, float, list]]:
+    """Each candidate's class, score and corners in model-input pixels, by raw rules 1 and 3."""
+    lead = RAW_LAYOUTS[case["layout"]]
+    scored = []
+    for values in raw_candidates(case):
+        classes = values[lead:]
+        best = max(classes)
+        score = values[4] * best if lead == 5 else best
+        cx, cy, w, h = values[:4]
+        scored.append((classes.index(best), score, [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2]))
+    return scored
+
+
+def _raw_output_problems(case: dict) -> list[str]:
+    """Why the output is not a matrix of finite numbers in its layout's shape; empty when it is."""
+    output, lead = case["output"], RAW_LAYOUTS.get(case["layout"])
+    if lead is None:
+        return [f"layout must be one of {', '.join(RAW_LAYOUTS)}"]
+    if not isinstance(output, list) or not output or not all(isinstance(row, list) and row for row in output):
+        return ["output must be a non-empty list of non-empty lists"]
+    if len({len(row) for row in output}) != 1 or not all(_number(value) for row in output for value in row):
+        return ["output must be a matrix of finite numbers"]
+    if len(raw_candidates(case)[0]) <= lead:
+        return [f"a {case['layout']} candidate holds more than {lead} values, a class score among them"]
+    return []
+
+
+def _whole_box_in_frame(box, case: dict) -> bool:
+    """Four whole pixel numbers in order, inside the frame."""
+    if not isinstance(box, list) or len(box) != 4 or not all(_number(v) and v == math.trunc(v) for v in box):
+        return False
+    return box[0] <= box[2] <= case["width"] and box[1] <= box[3] <= case["height"] and min(box) >= 0
+
+
+def _raw_entry_problems(entry: dict, scored: list, case: dict) -> list[str]:
+    """Why one expected detection is not its candidate's class and score, or its box no whole box in the frame."""
+    index = entry["candidate"]
+    if not _count(index) or index >= len(scored):
+        return [f"expected candidate {index!r} is no candidate of the case"]
+    cls, score, _ = scored[index]
+    bad = []
+    if entry["class"] != cls:
+        bad.append(f"candidate {index}: rule 1: the class is not the first class column holding the best score")
+    if not _number(entry["score"]) or not math.isclose(entry["score"], score, abs_tol=1e-9):
+        bad.append(f"candidate {index}: rule 1: the score is not the candidate's score")
+    if score < case["score_threshold"]:
+        bad.append(f"candidate {index}: rule 2: the score is under score_threshold")
+    if not _whole_box_in_frame(entry["box"], case):
+        bad.append(f"candidate {index}: rule 5: the box is not four whole pixels in order inside the frame")
+    return bad
+
+
+def _ranked_before(first: int, second: int, scored: list) -> bool:
+    """Whether candidate first comes before second: a higher score, ties to the lower candidate."""
+    return (-scored[first][1], first) < (-scored[second][1], second)
+
+
+def _suppressed_by_kept(index: int, kept: list, scored: list) -> bool:
+    """Whether a kept candidate ranked before index holds its class and overlaps it above SUPPRESSION_IOU."""
+    cls, _, box = scored[index]
+    return any(scored[k][0] == cls and _ranked_before(k, index, scored) and _iou(scored[k][2], box) > SUPPRESSION_IOU
+               for k in kept)
+
+
+def _raw_suppression_problems(case: dict, scored: list) -> list[str]:
+    """Why the expected set is not what rule 4 keeps, judged in model-input pixels; empty when it is."""
+    kept = [entry["candidate"] for entry in case["expected"]]
+    bad = []
+    for index, (_, score, _) in enumerate(scored):
+        dropped = index not in kept and score >= case["score_threshold"]
+        if dropped and not _suppressed_by_kept(index, kept, scored):
+            bad.append(f"candidate {index}: rule 4: it is confident and not expected, yet no kept candidate of its class "
+                       f"ranked before it overlaps it above IoU {SUPPRESSION_IOU}")
+    bad += [f"candidate {k}: rule 4: it is expected, yet a kept candidate of its class ranked before it overlaps it "
+            f"above IoU {SUPPRESSION_IOU}" for k in kept if _suppressed_by_kept(k, kept, scored)]
+    return bad
+
+
+def _raw_expected_problems(case: dict) -> list[str]:
+    """Why the expected detections break a raw rule or come out of order; empty when they hold."""
+    entries = case["expected"]
+    if not isinstance(entries, list) or not all(isinstance(e, dict) and set(e) == RAW_EXPECTED_KEYS for e in entries):
+        return [f"expected must be a list of detections, each holding exactly {', '.join(sorted(RAW_EXPECTED_KEYS))}"]
+    scored = raw_scores(case)
+    bad = [why for entry in entries for why in _raw_entry_problems(entry, scored, case)]
+    if bad:
+        return bad
+    candidates = [entry["candidate"] for entry in entries]
+    if candidates != sorted(candidates, key=lambda index: (-scored[index][1], index)):
+        bad.append("rule 4: the detections must come in descending score, ties to the lower candidate")
+    return bad + _raw_suppression_problems(case, scored)
+
+
+def raw_case_problems(case) -> list[str]:
+    """Why one raw-head case is malformed or breaks a raw rule; empty when it is sound."""
+    if not isinstance(case, dict) or set(case) != RAW_CASE_KEYS:
+        return [f"a raw case must hold exactly {', '.join(sorted(RAW_CASE_KEYS))}"]
+    if not isinstance(case["name"], str) or not case["name"]:
+        return ["a raw case needs a name"]
+    bad = mapping_problems(case) + _raw_output_problems(case) + _rule_and_threshold_problems(case)
+    bad = bad or _raw_expected_problems(case)
+    return [f"{case['name']}: {why}" for why in bad]
+
+
+def raw_decode_problems(spec: dict) -> list[str]:
+    """Why the raw_decode section is malformed; empty when every case is sound and every layout has one."""
+    section = spec.get("raw_decode")
+    if not isinstance(section, dict) or set(section) != RAW_KEYS:
+        return [f"raw_decode must hold exactly {', '.join(sorted(RAW_KEYS))}"]
+    cases = section["cases"]
+    if not isinstance(cases, list) or not cases:
+        return ["raw_decode.cases must be a non-empty list"]
+    bad = _tolerance_and_rules_problems(section, "raw_decode")
+    if not isinstance(section["layouts"], dict) or set(section["layouts"]) != set(RAW_LAYOUTS):
+        bad.append(f"raw_decode.layouts must describe exactly {', '.join(RAW_LAYOUTS)}")
+    if section["iou_threshold"] != SUPPRESSION_IOU or section["order"] != "score":
+        bad.append(f"raw_decode.iou_threshold must be {SUPPRESSION_IOU} and raw_decode.order score")
+    for case in cases:
+        bad += raw_case_problems(case)
+    if bad:
+        return bad
+    return [f"layout {layout} has no raw case" for layout in RAW_LAYOUTS if all(c["layout"] != layout for c in cases)]
+
+
+def _digest_case_problems(case) -> list[str]:
+    """Why one full-size case cannot be replayed: its frame, its mapping or its expected digest and samples."""
+    if not isinstance(case, dict) or set(case) != DIGEST_CASE_KEYS:
+        return [f"a digest case must hold exactly {', '.join(sorted(DIGEST_CASE_KEYS))}"]
+    bad = mapping_problems(case)
+    channels = len(case["pixel_format"]) if case["pixel_format"] in ("RGB", "RGBA") else 0
+    if not channels or not _count(case["plane_offset_bytes"]) or not _count(case["row_stride_bytes"]):
+        bad.append("pixel_format must be RGB or RGBA, and the offset and the row stride integers of at least zero")
+    elif case["row_stride_bytes"] < case["width"] * channels:
+        bad.append("row_stride_bytes is shorter than a row of pixels")
+    digest = case["expected_sha256"]
+    if not isinstance(digest, str) or len(digest) != 64 or set(digest) - set("0123456789abcdef"):
+        bad.append("expected_sha256 must be 64 lowercase hex digits")
+    samples = case["samples"]
+    if not isinstance(samples, list) or not samples or not all(
+            isinstance(s, list) and len(s) == 4 and all(map(_count, s[:3])) and _number(s[3]) for s in samples):
+        bad.append("samples must list channel, y, x and the value there")
+    return [f"{case.get('name')}: {why}" for why in bad]
+
+
+def digest_problems(spec: dict) -> list[str]:
+    """Why the digest_cases section is malformed; empty when every full-size case can be replayed."""
+    section = spec.get("digest_cases")
+    if not isinstance(section, dict) or set(section) != DIGEST_KEYS:
+        return [f"digest_cases must hold exactly {', '.join(sorted(DIGEST_KEYS))}"]
+    if not all(isinstance(section[key], str) and section[key] for key in ("frame", "tensor")):
+        return ["digest_cases.frame and digest_cases.tensor must say how the frame and the tensor are built"]
+    cases = section["cases"]
+    if not isinstance(cases, list) or not cases:
+        return ["digest_cases.cases must be a non-empty list"]
+    return [why for case in cases for why in _digest_case_problems(case)]
+
+
 def case_digest(case: dict) -> str:
     """SHA-256 of a case in one canonical spelling, so reformatting the file changes no digest."""
     return hashlib.sha256(json.dumps(case, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def published_problems(spec: dict) -> list[str]:
-    """Why the decode cases are not the published ones plus recorded additions; empty when they are."""
-    found = {case["name"]: case_digest(case) for case in spec["decode"]["cases"]}
-    bad = [f"decode case {name} is missing: a published case stays" for name in PUBLISHED if name not in found]
+def _published(cases: list, published: dict, label: str, listed_in: str) -> list[str]:
+    """Why these cases are not the published ones plus recorded additions; empty when they are."""
+    found = {case["name"]: case_digest(case) for case in cases}
+    bad = [f"{label} {name} is missing: a published case stays" for name in published if name not in found]
     for name, digest in found.items():
-        if name not in PUBLISHED:
-            bad.append(f"decode case {name} is not recorded: add its digest {digest} to PUBLISHED")
-        elif digest != PUBLISHED[name]:
-            bad.append(f"decode case {name} changed (digest {digest}): "
-                       "a published case changes only with schema_version")
+        if name not in published:
+            bad.append(f"{label} {name} is not recorded: add its digest {digest} to {listed_in}")
+        elif digest != published[name]:
+            bad.append(f"{label} {name} changed (digest {digest}): a published case changes only with schema_version")
     return bad
+
+
+def published_problems(spec: dict) -> list[str]:
+    """Why the decode, raw-head and digest cases are not the published ones plus recorded additions."""
+    return (_published(spec["decode"]["cases"], PUBLISHED, "decode case", "PUBLISHED")
+            + _published(spec["raw_decode"]["cases"], PUBLISHED_RAW, "raw case", "PUBLISHED_RAW")
+            + _published(spec["digest_cases"]["cases"], PUBLISHED_DIGEST, "digest case", "PUBLISHED_DIGEST"))
 
 
 def contract_problems(spec: dict, models: dict[str, dict]) -> list[str]:
     """Every problem of the metadata keys and the decode section; empty when the contract is sound."""
-    bad = metadata_problems(spec, models) + decode_problems(spec)
+    bad = metadata_problems(spec, models) + decode_problems(spec) + raw_decode_problems(spec) + digest_problems(spec)
     # The digests of malformed cases would only repeat their cause.
     return bad or published_problems(spec)
 
@@ -296,7 +506,8 @@ def main(contract: pathlib.Path, models: pathlib.Path) -> int:
     if not bad:
         cases = spec["decode"]["cases"]
         print(f"{contract.name}: {len(cases)} decode cases, {sum(len(case['rows']) for case in cases)} rows, "
-              f"layout {spec['decode']['layout']}")
+              f"layout {spec['decode']['layout']}; {len(spec['raw_decode']['cases'])} raw-head cases, "
+              f"{len(spec['digest_cases']['cases'])} full-size digest cases")
     return 1 if bad else 0
 
 

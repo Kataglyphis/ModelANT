@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- `contracts/inference-v1.json` gains two sections (hub BACKLOG CON288 (e)); `schema_version` stays 1, as no published
+  case changes. `digest_cases` holds four full-size frames compared by the SHA-256 of their NCHW float32 tensor: a
+  2304x1296 frame stretched and letterboxed to 640x640, a 1279-pixel-wide frame with rows padded to 3840 bytes, and an
+  RGBA frame 64 bytes into its buffer, each frame built byte by byte from a formula, with five sampled values beside
+  the digest. `raw_decode` fixes the raw heads the owner kept (D6), `cxcywh_objectness_scores` and
+  `cxcywh_scores_by_anchor`, under five rules (objectness times the best class over every class column, the
+  threshold, corners from centre and size, same-class suppression above IoU 0.45 in model-input pixels in descending
+  score with ties to the lower candidate, then the mapping and cut), with seven cases, two equal scores among them.
+  `decode_contract.py` checks both sections and publishes their cases' digests; `test_preprocess_contract.py`
+  rebuilds each frame and matches its digest through `compare.prepare`, and four new tests prove the raw and digest
+  checks fail. The detectors replay both sections at their next contract lock.
+
 - `contracts/fixtures/two_cats.png`: the lossless RGB decode of `two_cats.jpg` (480×659, Pillow 11.1.0, PNG level 9,
   SHA-256 `c6cd81c5…` in `fixtures/NOTICE`), so the three detectors' golden tests can hand the model the same pixels
   instead of three JPEG decoders' output (hub BACKLOG CON234, its first point). `large-files.allow` freezes it at

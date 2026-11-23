@@ -438,5 +438,176 @@
         ]
       }
     ]
+  },
+  "digest_cases": {
+    "frame": "Byte offset + y * row_stride_bytes + x * channels + c holds (7*x + 13*y + 61*c) % 256 for channel c (R, G, B, then A) of pixel (x, y); every other byte, the plane offset and the end of each padded row, holds 171.",
+    "tensor": "expected_sha256 is the SHA-256 of the preprocessed NCHW float32 tensor as little-endian bytes: each value is pixel / 255 as a float32 division (a float64 division rounded to float32 gives the same bits; multiplying by 1/255 differs in 126 of the 256 values), the letterbox fill 114 / 255 the same way. samples hold channel, y, x and the value there, to show where two tensors part.",
+    "cases": [
+      {
+        "name": "full_size_stretch_2304x1296",
+        "pixel_format": "RGB", "width": 2304, "height": 1296, "row_stride_bytes": 6912, "plane_offset_bytes": 0,
+        "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 0.2777777777777778, "scale_y": 0.49382716049382713},
+        "expected_sha256": "ee3f856f56068deef5fd09415148870de9b31af405ece1e4dfc7cc2f4c8b8139",
+        "samples": [[0, 0, 0, 0.0], [1, 320, 320, 0.6470588445663452], [2, 639, 639, 0.027450980618596077], [0, 1, 3, 0.3764705955982208], [2, 639, 0, 0.13725490868091583]]
+      },
+      {
+        "name": "full_size_letterbox_2304x1296",
+        "pixel_format": "RGB", "width": 2304, "height": 1296, "row_stride_bytes": 6912, "plane_offset_bytes": 0,
+        "input_width": 640, "input_height": 640, "mode": "letterbox",
+        "mapping": {"content_width": 640, "content_height": 360, "pad_x": 0, "pad_y": 140, "scale_x": 0.2777777777777778, "scale_y": 0.2777777777777778},
+        "expected_sha256": "1d4b28ba722b4346746c53cd3c3c0c8f729a8a040a9966603a60ced1a6f704bc",
+        "samples": [[0, 0, 0, 0.4470588266849518], [1, 320, 320, 0.6470588445663452], [2, 639, 639, 0.4470588266849518], [0, 141, 3, 0.4274509847164154], [2, 639, 0, 0.4470588266849518]]
+      },
+      {
+        "name": "odd_width_rows_padded_to_4_bytes",
+        "pixel_format": "RGB", "width": 1279, "height": 721, "row_stride_bytes": 3840, "plane_offset_bytes": 0,
+        "input_width": 640, "input_height": 640, "mode": "letterbox",
+        "mapping": {"content_width": 640, "content_height": 361, "pad_x": 0, "pad_y": 139, "scale_x": 0.5003909304143862, "scale_y": 0.5006934812760055},
+        "expected_sha256": "d3143abad04558c6f0d377ef13397255852dc0970508e7bc0fb5fd42848e8480",
+        "samples": [[0, 0, 0, 0.4470588266849518], [1, 320, 320, 0.04313725605607033], [2, 639, 639, 0.4470588266849518], [0, 140, 3, 0.1882352977991104], [2, 639, 0, 0.4470588266849518]]
+      },
+      {
+        "name": "rgba_with_a_plane_offset",
+        "pixel_format": "RGBA", "width": 1280, "height": 720, "row_stride_bytes": 5120, "plane_offset_bytes": 64,
+        "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 0.5, "scale_y": 0.8888888888888888},
+        "expected_sha256": "ea15a8702eee4516710753da732f9582d970f0e48dbf38a3542239251828541d",
+        "samples": [[0, 0, 0, 0.0], [1, 320, 320, 0.019607843831181526], [2, 639, 639, 0.886274516582489], [0, 1, 3, 0.21568627655506134], [2, 639, 0, 0.9411764740943909]]
+      }
+    ]
+  },
+  "raw_decode": {
+    "layouts": {
+      "cxcywh_objectness_scores": "[1, candidates, 5 + classes]: rows of cx, cy, w, h, objectness, then one score per class; output holds the rows.",
+      "cxcywh_scores_by_anchor": "[1, 4 + classes, anchors]: columns of cx, cy, w, h, then one score per class; output holds the matrix as the model writes it, one row per value."
+    },
+    "rules": [
+      "1. A candidate's score is its objectness times its best class score (cxcywh_objectness_scores), or its best class score (cxcywh_scores_by_anchor), the best over every class column; its class is the first column holding that score.",
+      "2. A candidate is kept only when its score is at least score_threshold.",
+      "3. Its corners are cx - w/2, cy - h/2, cx + w/2 and cy + h/2, in model-input pixels.",
+      "4. The kept candidates are taken in descending score, ties to the lower candidate; each suppresses every later candidate of its class whose IoU with it, in model-input pixels before any mapping or cut, is above iou_threshold. The survivors come in that order.",
+      "5. Each survivor maps to the frame as decode rule 5 says: (x - pad_x) / scale_x and (y - pad_y) / scale_y, then x is cut to [0, width] and y to [0, height]."
+    ],
+    "iou_threshold": 0.45,
+    "order": "score",
+    "score_tolerance": 1e-06,
+    "coordinate_tolerance": 0.01,
+    "cases": [
+      {
+        "name": "objectness_times_the_best_class",
+        "rule": 1, "layout": "cxcywh_objectness_scores",
+        "width": 640, "height": 640, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 1.0, "scale_y": 1.0},
+        "score_threshold": 0.25,
+        "output": [
+          [100, 100, 40, 40, 0.5, 0.25, 0.75, 0.125],
+          [300, 300, 40, 40, 0.75, 0.625, 0.25, 0.125],
+          [500, 100, 40, 40, 1, 0.5, 0.5, 0.25],
+          [500, 500, 40, 40, 0.25, 0.75, 0.5, 0.5]
+        ],
+        "expected": [
+          {"candidate": 2, "class": 0, "score": 0.5, "box": [480, 80, 520, 120]},
+          {"candidate": 1, "class": 0, "score": 0.46875, "box": [280, 280, 320, 320]},
+          {"candidate": 0, "class": 1, "score": 0.375, "box": [80, 80, 120, 120]}
+        ]
+      },
+      {
+        "name": "same_class_overlap_above_0_45_keeps_the_stronger",
+        "rule": 4, "layout": "cxcywh_objectness_scores",
+        "width": 640, "height": 640, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 1.0, "scale_y": 1.0},
+        "score_threshold": 0.25,
+        "output": [
+          [100, 100, 100, 100, 1, 0.75, 0],
+          [136, 100, 100, 100, 1, 0.875, 0],
+          [400, 400, 100, 100, 1, 0.5, 0]
+        ],
+        "expected": [
+          {"candidate": 1, "class": 0, "score": 0.875, "box": [86, 50, 186, 150]},
+          {"candidate": 2, "class": 0, "score": 0.5, "box": [350, 350, 450, 450]}
+        ]
+      },
+      {
+        "name": "same_class_overlap_at_most_0_45_stays",
+        "rule": 4, "layout": "cxcywh_objectness_scores",
+        "width": 640, "height": 640, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 1.0, "scale_y": 1.0},
+        "score_threshold": 0.25,
+        "output": [
+          [100, 100, 100, 100, 1, 0.875, 0],
+          [140, 100, 100, 100, 1, 0.75, 0]
+        ],
+        "expected": [
+          {"candidate": 0, "class": 0, "score": 0.875, "box": [50, 50, 150, 150]},
+          {"candidate": 1, "class": 0, "score": 0.75, "box": [90, 50, 190, 150]}
+        ]
+      },
+      {
+        "name": "different_classes_never_suppress",
+        "rule": 4, "layout": "cxcywh_objectness_scores",
+        "width": 640, "height": 640, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 1.0, "scale_y": 1.0},
+        "score_threshold": 0.25,
+        "output": [
+          [100, 100, 100, 100, 1, 0.875, 0],
+          [120, 100, 100, 100, 1, 0, 0.75]
+        ],
+        "expected": [
+          {"candidate": 0, "class": 0, "score": 0.875, "box": [50, 50, 150, 150]},
+          {"candidate": 1, "class": 1, "score": 0.75, "box": [70, 50, 170, 150]}
+        ]
+      },
+      {
+        "name": "equal_scores_keep_the_lower_candidate",
+        "rule": 4, "layout": "cxcywh_objectness_scores",
+        "width": 640, "height": 640, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 1.0, "scale_y": 1.0},
+        "score_threshold": 0.25,
+        "output": [
+          [400, 400, 100, 100, 1, 0.75, 0],
+          [100, 100, 100, 100, 1, 0.75, 0],
+          [120, 100, 100, 100, 1, 0.75, 0]
+        ],
+        "expected": [
+          {"candidate": 0, "class": 0, "score": 0.75, "box": [350, 350, 450, 450]},
+          {"candidate": 1, "class": 0, "score": 0.75, "box": [50, 50, 150, 150]}
+        ]
+      },
+      {
+        "name": "anchor_columns_are_the_candidates",
+        "rule": 4, "layout": "cxcywh_scores_by_anchor",
+        "width": 640, "height": 640, "input_width": 640, "input_height": 640, "mode": "stretch",
+        "mapping": {"content_width": 640, "content_height": 640, "pad_x": 0, "pad_y": 0, "scale_x": 1.0, "scale_y": 1.0},
+        "score_threshold": 0.25,
+        "output": [
+          [100, 130, 400, 400],
+          [100, 100, 400, 100],
+          [100, 100, 100, 100],
+          [100, 100, 100, 100],
+          [0.5, 0.25, 0.125, 0.625],
+          [0.875, 0.75, 0.0625, 0.125]
+        ],
+        "expected": [
+          {"candidate": 0, "class": 1, "score": 0.875, "box": [50, 50, 150, 150]},
+          {"candidate": 3, "class": 0, "score": 0.625, "box": [350, 50, 450, 150]}
+        ]
+      },
+      {
+        "name": "suppression_in_model_input_pixels",
+        "rule": 5, "layout": "cxcywh_objectness_scores",
+        "width": 1280, "height": 720, "input_width": 640, "input_height": 640, "mode": "letterbox",
+        "mapping": {"content_width": 640, "content_height": 360, "pad_x": 0, "pad_y": 140, "scale_x": 0.5, "scale_y": 0.5},
+        "score_threshold": 0.25,
+        "output": [
+          [150, 150, 100, 100, 1, 0.875],
+          [150, 100, 100, 160, 1, 0.75]
+        ],
+        "expected": [
+          {"candidate": 0, "class": 0, "score": 0.875, "box": [200, 0, 400, 120]},
+          {"candidate": 1, "class": 0, "score": 0.75, "box": [200, 0, 400, 80]}
+        ]
+      }
+    ]
   }
 }

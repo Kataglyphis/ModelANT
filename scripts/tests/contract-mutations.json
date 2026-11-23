@@ -448,6 +448,30 @@
     "why": "An empty or repeated list of values is nothing a model.json can be checked against."
   },
   {
+    "id": "contract.raw-suppressed-candidate-kept",
+    "target": "scripts/decode_contract.py",
+    "find": "        if dropped and not _suppressed_by_kept(index, kept, scored):\n",
+    "replace": "        if False:\n",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A raw case that drops a confident candidate no kept one suppresses would hand every detector a wrong set (hub CON288 (e))."
+  },
+  {
+    "id": "contract.raw-order-unchecked",
+    "target": "scripts/decode_contract.py",
+    "find": "    if candidates != sorted(candidates, key=lambda index: (-scored[index][1], index)):\n",
+    "replace": "    if False:\n",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "Raw-head detections come in descending score, ties to the lower candidate; a case out of that order misleads every replay."
+  },
+  {
+    "id": "contract.digest-hex-unchecked",
+    "target": "scripts/decode_contract.py",
+    "find": "    if not isinstance(digest, str) or len(digest) != 64 or set(digest) - set(\"0123456789abcdef\"):\n",
+    "replace": "    if not isinstance(digest, str):\n",
+    "test": "python3 -I scripts/tests/test_decode_contract.py",
+    "why": "A digest case whose expected SHA-256 is no SHA-256 can never be matched by a detector's tensor."
+  },
+  {
     "id": "contract.lossless-fixture-digest",
     "target": "contracts/fixtures/NOTICE",
     "find": "SHA256 c6cd81c5125e0772096c6e2968353c758bb5ecb3b2dbf7ec2d1c522b57c75f0f",

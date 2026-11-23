@@ -201,7 +201,8 @@ class DecodeContractTests(unittest.TestCase):
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             self.assertEqual(0, checks.main(CONTRACT, ROOT / "models"))
-        self.assertEqual("inference-v1.json: 9 decode cases, 40 rows, layout xyxy_score_class\n", out.getvalue())
+        self.assertEqual("inference-v1.json: 9 decode cases, 40 rows, layout xyxy_score_class; 7 raw-head cases, "
+                         "4 full-size digest cases\n", out.getvalue())
         case(self.spec, "box_cut_at_each_frame_edge")["expected"][2]["box"][2] = 1300
         with tempfile.TemporaryDirectory() as tmp:
             broken = Path(tmp) / "broken.json"
@@ -210,6 +211,73 @@ class DecodeContractTests(unittest.TestCase):
                 self.assertEqual(1, checks.main(broken, ROOT / "models"))
         problem = "box_cut_at_each_frame_edge: expected row 2: rule 5: the box reaches past the frame"
         self.assertEqual(f"broken.json: {problem}\n", err.getvalue())
+
+
+KEPT_NONE = "rule 4: it is confident and not expected, yet no kept candidate of its class ranked before it overlaps it above IoU 0.45"
+# Each row: the raw case, the fields to overwrite, and the one problem the checks must then name (hub CON288 (e)).
+BROKEN_RAW_CASES = (
+    ("same_class_overlap_above_0_45_keeps_the_stronger",
+     [("expected", 0, {"candidate": 0, "class": 0, "score": 0.75, "box": [50, 50, 150, 150]})],
+     f"candidate 1: {KEPT_NONE}"),
+    ("same_class_overlap_at_most_0_45_stays", [("expected", slice(1, 2), [])], f"candidate 1: {KEPT_NONE}"),
+    ("equal_scores_keep_the_lower_candidate",
+     [("expected", 1, {"candidate": 2, "class": 0, "score": 0.75, "box": [70, 50, 170, 150]})],
+     f"candidate 1: {KEPT_NONE}"),
+    ("objectness_times_the_best_class", [("expected", 0, "class", 1)],
+     "candidate 2: rule 1: the class is not the first class column holding the best score"),
+    ("objectness_times_the_best_class", [("expected", 2, "score", 0.75)],
+     "candidate 0: rule 1: the score is not the candidate's score"),
+    ("different_classes_never_suppress",
+     [("expected", slice(0, 2), [{"candidate": 1, "class": 1, "score": 0.75, "box": [70, 50, 170, 150]},
+                                 {"candidate": 0, "class": 0, "score": 0.875, "box": [50, 50, 150, 150]}])],
+     "rule 4: the detections must come in descending score, ties to the lower candidate"),
+    ("suppression_in_model_input_pixels", [("expected", 1, "box", [200, 0, 400, 800])],
+     "candidate 1: rule 5: the box is not four whole pixels in order inside the frame"),
+    ("anchor_columns_are_the_candidates", [("output", 0, [100, 130])], "output must be a matrix of finite numbers"),
+    ("anchor_columns_are_the_candidates", [("layout", "rotated")],
+     "layout must be one of cxcywh_objectness_scores, cxcywh_scores_by_anchor"),
+)
+
+
+def raw_case(spec, name):
+    return next(item for item in spec["raw_decode"]["cases"] if item["name"] == name)
+
+
+class RawAndDigestContractTests(unittest.TestCase):
+    def setUp(self):
+        self.spec = checks.load(CONTRACT)
+
+    def test_each_broken_raw_case_is_named_with_its_one_problem(self):
+        for name, changes, problem in BROKEN_RAW_CASES:
+            spec = copy.deepcopy(self.spec)
+            for change in changes:
+                put(raw_case(spec, name), *change)
+            with self.subTest(case=name, problem=problem):
+                self.assertEqual([f"{name}: {problem}"], checks.raw_decode_problems(spec))
+
+    def test_the_raw_settings_are_the_ones_d6_fixes(self):
+        for key, value in (("iou_threshold", 0.5), ("order", "row")):
+            spec = copy.deepcopy(self.spec)
+            spec["raw_decode"][key] = value
+            self.assertEqual(["raw_decode.iou_threshold must be 0.45 and raw_decode.order score"],
+                             checks.raw_decode_problems(spec))
+        self.spec["raw_decode"]["layouts"].pop("cxcywh_scores_by_anchor")
+        self.assertEqual(["raw_decode.layouts must describe exactly cxcywh_objectness_scores, cxcywh_scores_by_anchor"],
+                         checks.raw_decode_problems(self.spec))
+
+    def test_a_digest_case_names_what_keeps_it_from_a_replay(self):
+        cases = self.spec["digest_cases"]["cases"]
+        cases[0]["expected_sha256"] = "X" * 64
+        cases[2]["row_stride_bytes"] = 3000
+        self.assertEqual(["full_size_stretch_2304x1296: expected_sha256 must be 64 lowercase hex digits",
+                          "odd_width_rows_padded_to_4_bytes: row_stride_bytes is shorter than a row of pixels"],
+                         checks.digest_problems(self.spec))
+
+    def test_a_published_raw_case_may_not_change(self):
+        changed = raw_case(self.spec, "suppression_in_model_input_pixels")
+        changed["score_threshold"] = 0.5
+        self.assertEqual([f"raw case suppression_in_model_input_pixels changed (digest {checks.case_digest(changed)}): "
+                          "a published case changes only with schema_version"], checks.published_problems(self.spec))
 
 
 if __name__ == "__main__":

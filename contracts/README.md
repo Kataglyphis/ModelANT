@@ -63,6 +63,46 @@ and that none breaks a rule, and never computes a box. It records a digest per p
 a changed or missing case fails `check.sh`, and a new case is appended with its digest.
 `scripts/tests/contract-mutations.json` proves each of these checks can fail.
 
+## Full-size frames by digest
+
+`digest_cases` holds four frames at full size, which the small cases above cannot (hub BACKLOG
+CON288 (e)): a 2304x1296 RGB frame stretched and letterboxed to 640x640, a frame 1279 pixels wide
+whose rows are padded to 3840 bytes, and an RGBA frame 64 bytes into its buffer. A consumer builds
+the frame as `digest_cases.frame` says, byte by byte from x, y and the channel, with 171 in every
+padding and offset byte, runs its production preprocessing, and compares the SHA-256 of the NCHW
+float32 tensor's little-endian bytes with `expected_sha256`. `samples` name five values, to show
+where two tensors part. The comparison is bit for bit: pixel / 255 is a float32 division, as the
+three detectors divide today; a float64 division rounded to float32 gives the same bits, and
+multiplying by 1/255 does not, in 126 of the 256 values. `test_preprocess_contract.py` rebuilds
+each frame and matches its digest through `compare.prepare`.
+
+## Raw heads
+
+`raw_decode` fixes the two raw layouts the family keeps (owner decision D6, 2026-11-21):
+`cxcywh_objectness_scores`, rows of cx, cy, w, h, objectness and a score per class, and
+`cxcywh_scores_by_anchor`, a `[4 + classes, anchors]` matrix whose columns are the candidates.
+Its five rules: a candidate scores its objectness times its best class score, or its best class
+score alone, the best over every class column and the first column on a tie; it needs at least
+the threshold; its corners come from its centre and size in model-input pixels; the candidates
+are taken in descending score, ties to the lower candidate, and each suppresses every later one
+of its class whose IoU with it is above 0.45, in model-input pixels before any mapping or cut;
+the survivors come in that order, mapped and cut as decode rule 5 says.
+
+| Case | Rule | Holds |
+| --- | --- | --- |
+| `objectness_times_the_best_class` | 1 | Scores 0.5, 0.46875 and 0.375 from objectness times class; a tie between two class scores is the first class; 0.1875 is under the threshold. |
+| `same_class_overlap_above_0_45_keeps_the_stronger` | 4 | IoU 0.47: the weaker of two boxes of one class goes, a far third stays. |
+| `same_class_overlap_at_most_0_45_stays` | 4 | IoU 0.43: both stay. |
+| `different_classes_never_suppress` | 4 | IoU 0.67 between two classes: both stay. |
+| `equal_scores_keep_the_lower_candidate` | 4 | Three candidates at 0.75: the lower of an overlapping pair stays, and equal scores keep candidate order. |
+| `anchor_columns_are_the_candidates` | 4 | The anchor layout: columns are candidates, the best class is the score, and suppression works the same. |
+| `suppression_in_model_input_pixels` | 5 | IoU 0.44 in model-input pixels, 0.67 once both boxes are cut at the top of a letterboxed frame: both stay. |
+
+Its expected detections are data too, published with their digests, and `decode_contract.py`
+holds each to the five rules: the class and score its candidate gives, the order, and that no
+confident candidate is missing unless a kept one of its class ranked before it overlaps it above
+0.45, and none is kept that such a one overlaps.
+
 ## Metadata keys
 
 `onnx_metadata` lists the two keys an export writes into the ONNX file, with the values a

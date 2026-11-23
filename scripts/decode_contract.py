@@ -427,16 +427,19 @@ def raw_decode_problems(spec: dict) -> list[str]:
     return [f"layout {layout} has no raw case" for layout in RAW_LAYOUTS if all(c["layout"] != layout for c in cases)]
 
 
-def _digest_case_problems(case) -> list[str]:
-    """Why one full-size case cannot be replayed: its frame, its mapping or its expected digest and samples."""
-    if not isinstance(case, dict) or set(case) != DIGEST_CASE_KEYS:
-        return [f"a digest case must hold exactly {', '.join(sorted(DIGEST_CASE_KEYS))}"]
-    bad = mapping_problems(case)
+def _digest_frame_problems(case: dict) -> list[str]:
+    """Why a full-size case's pixel format, offset and row stride cannot build its frame."""
     channels = len(case["pixel_format"]) if case["pixel_format"] in ("RGB", "RGBA") else 0
     if not channels or not _count(case["plane_offset_bytes"]) or not _count(case["row_stride_bytes"]):
-        bad.append("pixel_format must be RGB or RGBA, and the offset and the row stride integers of at least zero")
-    elif case["row_stride_bytes"] < case["width"] * channels:
-        bad.append("row_stride_bytes is shorter than a row of pixels")
+        return ["pixel_format must be RGB or RGBA, and the offset and the row stride integers of at least zero"]
+    if case["row_stride_bytes"] < case["width"] * channels:
+        return ["row_stride_bytes is shorter than a row of pixels"]
+    return []
+
+
+def _digest_expected_problems(case: dict) -> list[str]:
+    """Why a full-size case's expected digest or samples cannot be compared with a tensor."""
+    bad = []
     digest = case["expected_sha256"]
     if not isinstance(digest, str) or len(digest) != 64 or set(digest) - set("0123456789abcdef"):
         bad.append("expected_sha256 must be 64 lowercase hex digits")
@@ -444,6 +447,14 @@ def _digest_case_problems(case) -> list[str]:
     if not isinstance(samples, list) or not samples or not all(
             isinstance(s, list) and len(s) == 4 and all(map(_count, s[:3])) and _number(s[3]) for s in samples):
         bad.append("samples must list channel, y, x and the value there")
+    return bad
+
+
+def _digest_case_problems(case) -> list[str]:
+    """Why one full-size case cannot be replayed: its frame, its mapping or its expected digest and samples."""
+    if not isinstance(case, dict) or set(case) != DIGEST_CASE_KEYS:
+        return [f"a digest case must hold exactly {', '.join(sorted(DIGEST_CASE_KEYS))}"]
+    bad = mapping_problems(case) + _digest_frame_problems(case) + _digest_expected_problems(case)
     return [f"{case.get('name')}: {why}" for why in bad]
 
 

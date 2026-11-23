@@ -88,7 +88,7 @@ are taken in descending score, ties to the lower candidate, and each suppresses 
 of its class whose IoU with it is above 0.45, in model-input pixels before any mapping or cut;
 the survivors come in that order, mapped and cut as decode rule 5 says.
 
-| Case | Rule | Holds |
+| Raw-head case | Raw rule | What it shows |
 | --- | --- | --- |
 | `objectness_times_the_best_class` | 1 | Scores 0.5, 0.46875 and 0.375 from objectness times class; a tie between two class scores is the first class; 0.1875 is under the threshold. |
 | `same_class_overlap_above_0_45_keeps_the_stronger` | 4 | IoU 0.47: the weaker of two boxes of one class goes, a far third stays. |

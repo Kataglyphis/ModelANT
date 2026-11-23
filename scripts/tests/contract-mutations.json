@@ -162,8 +162,8 @@
   {
     "id": "decode.box-in-whole-pixels",
     "target": "scripts/decode_contract.py",
-    "find": " or not all(_number(v) and v == math.trunc(v) for v in box):",
-    "replace": " or not all(_number(v) for v in box):",
+    "find": "    if not isinstance(box, list) or len(box) != 4 or not all(_number(v) and v == math.trunc(v) for v in box):\n        return [\"the box is not four whole pixel numbers\"]",
+    "replace": "    if not isinstance(box, list) or len(box) != 4 or not all(_number(v) for v in box):\n        return [\"the box is not four whole pixel numbers\"]",
     "test": "python3 -I scripts/tests/test_decode_contract.py",
     "why": "OrchestrANT cuts coordinates to integers; a fractional expected box could only be met by the float decoders."
   },
@@ -202,7 +202,7 @@
   {
     "id": "decode.published-case-missing",
     "target": "scripts/decode_contract.py",
-    "find": "    bad = [f\"decode case {name} is missing: a published case stays\" for name in PUBLISHED if name not in found]",
+    "find": "    bad = [f\"{label} {name} is missing: a published case stays\" for name in published if name not in found]",
     "replace": "    bad = []",
     "test": "python3 -I scripts/tests/test_decode_contract.py",
     "why": "A deleted case silently removes a rule from three consumers' tests at their next pin."
@@ -210,7 +210,7 @@
   {
     "id": "decode.published-case-changed",
     "target": "scripts/decode_contract.py",
-    "find": "        elif digest != PUBLISHED[name]:",
+    "find": "        elif digest != published[name]:",
     "replace": "        elif False:",
     "test": "python3 -I scripts/tests/test_decode_contract.py",
     "why": "A published case changes only with schema_version (AGENTS.md); an edited row must not pass as the same case."
@@ -218,7 +218,7 @@
   {
     "id": "decode.new-case-recorded",
     "target": "scripts/decode_contract.py",
-    "find": "        if name not in PUBLISHED:",
+    "find": "        if name not in published:",
     "replace": "        if False:",
     "test": "python3 -I scripts/tests/test_decode_contract.py",
     "why": "Recording a new case's digest is the reviewed step that makes it a published case."
@@ -258,8 +258,8 @@
   {
     "id": "decode.cases-not-empty",
     "target": "scripts/decode_contract.py",
-    "find": "    if not isinstance(cases, list) or not cases:",
-    "replace": "    if False:",
+    "find": "    if not isinstance(cases, list) or not cases:\n        return [\"decode.cases must be a non-empty list\"]",
+    "replace": "    if False:\n        return [\"decode.cases must be a non-empty list\"]",
     "test": "python3 -I scripts/tests/test_decode_contract.py",
     "why": "A decode section whose cases are gone must be named as that, not as five rules without a case."
   },
@@ -274,8 +274,8 @@
   {
     "id": "decode.case-has-a-name",
     "target": "scripts/decode_contract.py",
-    "find": "    if not isinstance(case[\"name\"], str) or not case[\"name\"]:",
-    "replace": "    if False:",
+    "find": "    if not isinstance(case[\"name\"], str) or not case[\"name\"]:\n        return [\"a decode case needs a name\"]",
+    "replace": "    if False:\n        return [\"a decode case needs a name\"]",
     "test": "python3 -I scripts/tests/test_decode_contract.py",
     "why": "Consumers list the cases they replay by name; a nameless case can be neither listed nor reported."
   },
@@ -410,7 +410,7 @@
   {
     "id": "decode.tolerances-bounded",
     "target": "scripts/decode_contract.py",
-    "find": "        if not _number(decode[key]) or not 0 < decode[key] < limit:",
+    "find": "        if not _number(section[key]) or not 0 < section[key] < limit:",
     "replace": "        if False:",
     "test": "python3 -I scripts/tests/test_decode_contract.py",
     "why": "A coordinate tolerance of a pixel, or a score tolerance of 0.01, would pass a decoder that is off by that much."

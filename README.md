@@ -39,14 +39,14 @@ on the CPU), with a `.deb` model package ([docs/models.md](docs/models.md#a-lang
 ## Quick start
 
 ```bash
-git clone --branch develop https://github.com/Kataglyphis/ModelANT.git
+git clone --recurse-submodules --branch develop https://github.com/Kataglyphis/ModelANT.git
 cd ModelANT
 docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
   ghcr.io/kataglyphis/kataglyphis_beschleuniger:latest bash scripts/build.sh deim_dfine_n_coco dist
 ```
 
 It builds in the family's Linux image, on its pinned CPython, torch and chain-built ONNX Runtime,
-and needs network ([docs/models.md](docs/models.md#building)). A consumer does not build: it pins the release asset's URL
+and needs network and a `dist/` the image's uid 1001 can write ([docs/models.md](docs/models.md#building)). A consumer does not build: it pins the release asset's URL
 and SHA-256 in a lock, as
 [`data-repositories.md` § The lock](https://github.com/Kataglyphis/ANTfrastructure/blob/develop/docs/data-repositories.md#the-lock)
 describes.

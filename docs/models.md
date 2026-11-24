@@ -65,7 +65,7 @@ census and runtime module paths are checked both before and after installation.
 
 Torch, torchvision, ONNX Runtime, NumPy, Pillow, PyYAML and SciPy come from the family image;
 they are excluded from uv's resolver because the chain's Python 3.15 Torch is not a PyPI wheel.
-Five additional direct dependencies pin packages shared by this lock and the current image. When
+Six additional direct dependencies pin packages shared by this lock and the current image. When
 either side changes, the build fails until those versions match; update them with the image and
 regenerate `uv.lock`, then run `scripts/tests/check-image-lock.sh` in the family image.
 
@@ -79,10 +79,17 @@ docker run --rm -v "$PWD:/workspace" -w /workspace -e MODELANT_WORK=/tmp/work \
   ghcr.io/kataglyphis/kataglyphis_beschleuniger:latest bash scripts/build.sh deim_dfine_n_coco dist
 ```
 
-`scripts/check.sh` is the push check (`check.yml`), in the same image: every model has its spec,
-licence and notice, the Python regression tests use the image's pinned CPython, and a fresh overlay
-is installed and checked against the image and its ORT wheel store. Initialize
-`third_party/ANTfrastructure` before running it in a fresh checkout. It resolves that interpreter
+`build.sh` and `check.sh` source the hub from `third_party/ANTfrastructure`, so clone with
+`--recurse-submodules`, or run `git submodule update --init third_party/ANTfrastructure` first.
+The image runs as uid 1001, which must be able to write `dist/`. Measured 2026-10-20 in that day's
+`:latest` (Python 3.14.4, torch 2.14.1+cpu, ONNX Runtime 1.30.0): 58 s, and all five files match
+`deim_dfine_n_coco-v1`'s `SHA256SUMS` byte for byte. That was before the export wrote the box
+integral for DirectML; v1 returns no detection on AMD GPUs, so new consumers pin v2.
+
+`scripts/check.sh` is the push check (`check.yml`), in the same image (the `docker run` above with
+`bash scripts/check.sh`): every model has its spec, licence and notice, the Python regression
+tests use the image's pinned CPython, and a fresh overlay is installed and checked against the
+image and its ORT wheel store. It resolves that interpreter
 with ANTfrastructure's `ci_image_python_require` and still requires the image's
 `PYTHON_MAJOR_MINOR` marker, so a host Python cannot pass. The separate `lint-gates.yml` workflow
 checks all tracked shell scripts with ANTfrastructure's pinned ShellCheck and warning ratchet on
@@ -104,17 +111,15 @@ deliberate fix.
 Moving these pins requires rebuilding, checking the new checkpoint SHA-256 and rerunning the
 export and regression suite. A general dependency bump cannot validate a replacement model.
 
-The image runs as uid 1001, which must be able to write `dist/`. Measured 2026-10-20 in `:latest`
-(Python 3.14.4, torch 2.14.1+cpu, ONNX Runtime 1.30.0): 58 s, and all five files match
-`deim_dfine_n_coco-v1`'s `SHA256SUMS` byte for byte. That was before the export wrote the box
-integral for DirectML; v1 returns no detection on AMD GPUs, so new consumers pin v2.
-
 ## Releasing
 
 ```bash
-git tag deim_dfine_n_coco-v2 && git push origin deim_dfine_n_coco-v2   # CI builds it in the image and publishes it
+git tag <name>-v<N> && git push origin <name>-v<N>                     # CI builds it in the image and publishes it
 gh workflow run release.yml --ref develop -f model=deim_dfine_n_coco   # the same build as an artifact, no release
 ```
+
+`N` is one above the model's last tag (`git tag -l '<name>-v*'`). The README's Release column and
+the consumers' locks then move to the new release.
 
 The release carries `<name>.onnx`, `<name>.LICENSE` and `<name>.NOTICE` (ship both with the
 model), `<name>.model.json`, the upstream checkpoint it came from (a mirror, so a rebuild does not

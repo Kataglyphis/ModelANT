@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The docs match the tree again; no data or code changed. The README quick start clones with `--recurse-submodules`,
+  which `build.sh` needs to source the hub, and says the image's uid 1001 must write `dist/`. `docs/models.md` counts
+  six image-shared pins (sympy came with the GenAI export), shows the `check.sh` call, tags `<name>-v<N>` instead of
+  the existing `deim_dfine_n_coco-v2`, and moves the uid note and the build measurement to Building.
+  `contracts/README.md` points the two raw YOLO layouts at their seven cases instead of saying they have none.
+
 - `contracts/inference-v1.json` gains two sections (hub BACKLOG CON288 (e)); `schema_version` stays 1, as no published
   case changes. `digest_cases` holds four full-size frames compared by the SHA-256 of their NCHW float32 tensor: a
   2304x1296 frame stretched and letterboxed to 640x640, a 1279-pixel-wide frame with rows padded to 3840 bytes, and an

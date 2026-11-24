@@ -114,8 +114,8 @@ consumer may meet:
 | `kataglyphis.output` | `xyxy_score_class`, `cxcywh_objectness_scores`, `cxcywh_scores_by_anchor` | The output's layout. |
 
 ModelANT's models name `xyxy_score_class`, the layout of the `output` block and of the decode
-cases. The other two names are raw YOLO heads, which AccelerANTgine and OrchestrANT also decode
-and for which this contract has no case. `check.sh` fails a `model.json` whose `onnx.metadata`
+cases. The other two names are raw YOLO heads, which AccelerANTgine and OrchestrANT also decode;
+their cases are in [Raw heads](#raw-heads). `check.sh` fails a `model.json` whose `onnx.metadata`
 lacks a key or names another value.
 
 ## Fixture and release
